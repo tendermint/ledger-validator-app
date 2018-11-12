@@ -15,10 +15,10 @@
 ********************************************************************************/
 
 #include "vote.h"
+#include "os.h"
 
 #include "../view.h"
 #include "apdu_codes.h"
-#include "json_parser.h"
 #include "buffering.h"
 
 // Ram
@@ -26,7 +26,7 @@
 uint8_t ram_buffer[RAM_BUFFER_SIZE];
 
 // Flash
-#define FLASH_BUFFER_SIZE 16384
+#define FLASH_BUFFER_SIZE 10000
 typedef struct {
     uint8_t buffer[FLASH_BUFFER_SIZE];
 } storage_t;
@@ -34,8 +34,8 @@ typedef struct {
 storage_t N_appdata_impl __attribute__ ((aligned(64)));
 #define N_appdata (*(storage_t *)PIC(&N_appdata_impl))
 
-parsed_json_t parsed_json;
 vote_reference_t vote_reference;
+vote_t vote;
 
 void update_ram(buffer_state_t *buffer, uint8_t *data, int size) {
     os_memmove(buffer->data + buffer->pos, data, size);
@@ -73,8 +73,8 @@ void vote_reset() {
     buffering_reset();
 }
 
-void vote_append(unsigned char *buffer, uint32_t length) {
-    buffering_append(buffer, length);
+uint32_t vote_append(unsigned char *buffer, uint32_t length) {
+    return buffering_append(buffer, length);
 }
 
 uint32_t vote_get_buffer_length() {
@@ -85,28 +85,30 @@ const uint8_t* vote_get_buffer() {
     return buffering_get_buffer()->data;
 }
 
-const char* vote_parse() {
-    const char* vote_buffer = (const char *) vote_get_buffer();
-    const char* error_msg = json_parse_s(
-            &parsed_json,
-            vote_buffer,
-            vote_get_buffer_length());
+parse_error_t vote_parse() {
+    const uint8_t* vote_buffer = vote_get_buffer();
 
-    if (error_msg != NULL) {
-        return error_msg;
-    }
-    error_msg = json_validate(&parsed_json, vote_buffer);
-    if (error_msg != NULL) {
-        return error_msg;
-    }
-    parsing_context_t context;
-    context.raw_json = vote_buffer;
-    context.parsed_json = &parsed_json;
-    set_parsing_context(context);
-    set_copy_delegate(&os_memmove);
-    return NULL;
+//    const char* error_msg = json_parse_s(
+//            &parsed_json,
+//            vote_buffer,
+//            vote_get_buffer_length());
+//
+//    if (error_msg != NULL) {
+//        return error_msg;
+//    }
+//    error_msg = json_validate(&parsed_json, vote_buffer);
+//    if (error_msg != NULL) {
+//        return error_msg;
+//    }
+//    parsing_context_t context;
+//    context.raw_json = vote_buffer;
+//    context.parsed_json = &parsed_json;
+//    set_parsing_context(context);
+//    set_copy_delegate(&os_memmove);
+
+    return parse_ok;
 }
 
-parsed_json_t* vote_get_parsed() {
-    return &parsed_json;
+vote_t* vote_get() {
+    return &vote;
 }

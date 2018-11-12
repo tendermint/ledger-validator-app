@@ -18,7 +18,6 @@
 #include "app_main.h"
 #include "view.h"
 #include "lib/vote.h"
-#include "lib/vote_parser.h"
 #include "signature.h"
 
 #include <os_io_seproxyhal.h>
@@ -151,12 +150,9 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
         }
     }
 
-    // TODO: Add validation
-//    if (vote_append(&(G_io_apdu_buffer[offset]), rx - offset) != NULL) {
-//        THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
-//    }
-
-    vote_append(&(G_io_apdu_buffer[offset]), rx - offset);
+    if (vote_append(&(G_io_apdu_buffer[offset]), rx - offset) != rx) {
+        THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
+    }
 
     return packageIndex == packageCount;
 }
@@ -227,48 +223,44 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 if (!process_chunk(tx, rx, true)) {
                     THROW(APDU_CODE_OK);
                 }
-                const char *error_msg = vote_parse();
-                if (error_msg != NULL) {
-                    int error_msg_length = strlen(error_msg);
-                    os_memmove(G_io_apdu_buffer, error_msg, error_msg_length);
-                    *tx += sizeof(error_msg_length);
+
+                parse_error_t error_code = vote_parse();
+
+                switch (error_code){
+                parse_ok:
+                    break;
+                default:
+//                    int error_msg_length = strlen(error_msg);
+//                    os_memmove(G_io_apdu_buffer, error_msg, error_msg_length);
+//                    *tx += sizeof(error_msg_length);
                     THROW(APDU_CODE_DATA_INVALID);
                 }
 
-                char result = 0;
-                int8_t msg_round = vote_parser_get_msg_round(vote_get_parsed(),
-                                                             (const char *) vote_get_buffer(),
-                                                             &result);
+                vote_t* vote = vote_get();
+                vote_reference_t* vote_ref = vote_reference_get();
 
-                if (result != 0) {
+                if (vote == NULL || vote_ref == NULL){
                     THROW(APDU_CODE_DATA_INVALID);
                 }
 
-                int64_t height = vote_parser_get_msg_height(vote_get_parsed(),
-                                                            (const char *) vote_get_buffer(),
-                                                            &result);
-
-                if (result != 0) {
-                    THROW(APDU_CODE_DATA_INVALID);
-                }
-
-                if (!vote_reference_get()->IsInitialized) {
-                    view_set_msg_round(msg_round);
-                    view_set_msg_height(height);
+                if (!vote_ref->IsInitialized) {
+                    view_set_msg_round(vote->Round);
+                    view_set_msg_height(vote->Height);
                     view_display_vote_init();
                     *flags |= IO_ASYNCH_REPLY;
                     THROW(APDU_CODE_DATA_INVALID);
                     break;
                 }
 
-                if ((msg_round > vote_reference_get()->CurrentMsgRound) ||
-                    ((msg_round == vote_reference_get()->CurrentMsgRound)
-                        && height > vote_reference_get()->CurrentHeight)) {
+                if ((vote->Round > vote_ref->CurrentMsgRound) ||
+                    ((vote->Round == vote_ref->CurrentMsgRound)
+                        && vote->Height > vote_ref->CurrentHeight)) {
 
-                    vote_reference_get()->CurrentMsgRound = msg_round;
-                    vote_reference_get()->CurrentHeight = height;
-                    view_set_state(msg_round, height);
+                    vote_ref->CurrentMsgRound = vote->Round;
+                    vote_ref->CurrentHeight = vote->Height;
+                    view_set_state(vote->Round, vote->Height);
 
+                    // TODO: This is probably incorrect, it should sign the whole vote
                     sign_vote(tx);
                 } else {
                     THROW(APDU_CODE_DATA_INVALID);

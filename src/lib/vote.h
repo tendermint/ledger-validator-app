@@ -14,13 +14,18 @@
 *  limitations under the License.
 ********************************************************************************/
 #pragma once
-
 #include "vote_parser.h"
-#include "os.h"
 
-// TODO: Rename to disambiguate
+typedef struct {
+  int8_t  IsInitialized;
+
+  // TODO: Use vote here
+  int64_t CurrentHeight;
+  int8_t  CurrentMsgRound;
+} vote_reference_t;
+
 void vote_reference_reset();
-// TODO: Rename to disambiguate
+
 vote_reference_t* vote_reference_get();
 
 // Initializes vote context
@@ -33,21 +38,22 @@ void vote_reset();
 /// Transaction buffer will grow until it reaches the maximum allowed size
 /// \param buffer
 /// \param length
-void vote_append(unsigned char *buffer, uint32_t length);
+/// \return number of appended bytes
+uint32_t vote_append(unsigned char *buffer, uint32_t length);
 
-/// Returns size of the raw json transaction buffer
+/// Returns size of the raw buffer
 /// \return
 uint32_t vote_get_buffer_length();
 
-/// Returns the raw json transaction buffer
+/// Returns the raw buffer
 /// \return
 const uint8_t* vote_get_buffer();
 
-/// Parse json message stored in transaction buffer
+/// Parse vote in buffer
 /// This function should be called as soon as full buffer data is loaded.
-/// \return It returns NULL if json is valid or error message otherwise.
-const char* vote_parse();
+/// \return It an error core or PARSE_OK
+parse_error_t vote_parse();
 
-/// Returns parsed representation of the transaction message
+/// Returns parsed vote
 /// \return
-parsed_json_t* vote_get_parsed();
+vote_t* vote_get();

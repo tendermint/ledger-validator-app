@@ -14,59 +14,16 @@
 *  limitations under the License.
 ********************************************************************************/
 
-#ifndef CI_TEST_VALIDATIONPARSER_H
-#define CI_TEST_VALIDATIONPARSER_H
-
-#include "json_parser.h"
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/// Extract height number from the json
-/// \param parsed_json, parsed json with validation message
-/// \param raw_json, raw json with validation message
-/// \return height number
-int64_t  vote_parser_get_msg_height(
-    parsed_json_t *parsed_json,
-    const char *raw_json,
-    char *result);
-
-/// Extract round number from the json
-/// \param parsed_json, parsed json with validation message
-/// \param raw_json, raw json with validation message
-/// \return round number
-int8_t vote_parser_get_msg_round(
-    parsed_json_t *parsed_json,
-    const char *raw_json,
-    char *result);
-
-/// Validate validation json
-/// \param parsed_json, parsed json with validation message
-/// \param raw_json, raw json with validation message
-/// \return error code
-const char* json_validate(
-        parsed_json_t* parsed_json,
-        const char* raw_json);
+#pragma once
+#include <inttypes.h>
 
 typedef struct {
-    int64_t CurrentHeight;
-    int8_t  IsInitialized;
-    int8_t  CurrentMsgRound;
-} vote_reference_t;
+  int64_t Height;
+  int8_t  Round;
+} vote_t;
 
-//---------------------------------------------
-// Delegates
+typedef enum {
+  parse_ok = 0
+} parse_error_t;
 
-typedef void(*copy_delegate)(void *dst, const void *source, size_t size);
-void set_copy_delegate(copy_delegate delegate);
-void set_parsing_context(parsing_context_t context);
-
-//---------------------------------------------
-
-
-#ifdef __cplusplus
-}
-#endif
-#endif //CI_TEST_VALIDATIONPARSER_H
+parse_error_t vote_amino_parse(uint8_t* buffer, uint32_t size, vote_t* vote);
