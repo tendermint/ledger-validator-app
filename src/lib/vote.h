@@ -15,40 +15,39 @@
 ********************************************************************************/
 #pragma once
 
-#include "validation_parser.h"
+#include "vote_parser.h"
 #include "os.h"
 
 // TODO: Rename to disambiguate
-void validation_reference_reset();
+void vote_reference_reset();
 // TODO: Rename to disambiguate
-validation_reference_t* validation_reference_get();
+vote_reference_t* vote_reference_get();
 
-// Initializes validation context
-void validation_initialize();
+// Initializes vote context
+void vote_initialize();
 
-/// Clears the transaction buffer
-void validation_reset();
+/// Clears the vote buffer
+void vote_reset();
 
 /// Appends buffer to the end of the current transaction buffer
 /// Transaction buffer will grow until it reaches the maximum allowed size
 /// \param buffer
 /// \param length
-void validation_append(unsigned char *buffer,
-                       uint32_t length);
+void vote_append(unsigned char *buffer, uint32_t length);
 
 /// Returns size of the raw json transaction buffer
 /// \return
-uint32_t validation_get_buffer_length();
+uint32_t vote_get_buffer_length();
 
 /// Returns the raw json transaction buffer
 /// \return
-const uint8_t* validation_get_buffer();
+const uint8_t* vote_get_buffer();
 
 /// Parse json message stored in transaction buffer
 /// This function should be called as soon as full buffer data is loaded.
 /// \return It returns NULL if json is valid or error message otherwise.
-const char* validation_parse();
+const char* vote_parse();
 
 /// Returns parsed representation of the transaction message
 /// \return
-parsed_json_t* validation_get_parsed();
+parsed_json_t* vote_get_parsed();

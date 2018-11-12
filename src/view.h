@@ -25,8 +25,8 @@
 
 enum UI_STATE {
     UI_MAIN_MENU,
-    UI_VALIDAITON_INIT,
-    UI_VALIDATION_PROCESSING
+    UI_VOTE_INIT,
+    UI_VOTE_PROCESSING
 };
 
 extern enum UI_STATE view_uiState;
@@ -34,11 +34,11 @@ extern enum UI_STATE view_uiState;
 //------ Delegates definitions
 typedef void (*delegate_accept_reference_signature)(int8_t msg_round, int64_t height);
 typedef void (*delegate_reject_reference_signature)();
-typedef void (*delegate_validation_reset)();
+typedef void (*delegate_vote_reset)();
 
 //------ Event handlers
 /// Set validation reset event handler
-void view_set_validation_reset_eh(delegate_validation_reset delegate);
+void view_set_vote_reset_eh(delegate_vote_reset delegate);
 
 /// Set accept reference signature event handler
 void view_set_accept_eh(delegate_accept_reference_signature delegate);
@@ -47,7 +47,10 @@ void view_set_accept_eh(delegate_accept_reference_signature delegate);
 void view_set_reject_eh(delegate_reject_reference_signature delegate);
 
 //------ Common functions
+/// view_init
 void view_init();
+
+/// view_mainmenu
 void view_display_main_menu();
 
 void view_set_state(int8_t msg_round, int64_t msg_height);
@@ -55,5 +58,5 @@ void view_set_msg_height(int64_t height);
 void view_set_msg_round(int8_t msg_round);
 void view_set_public_key(const char* publicKey);
 
-void view_display_validation_init();
-void view_display_validation_processing();
+void view_display_vote_init();
+void view_display_vote_processing();

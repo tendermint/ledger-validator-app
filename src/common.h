@@ -16,7 +16,8 @@
 #pragma once
 
 typedef enum {
-    ED25519
+  SECP256K1 = 0,
+  ED25519 = 1
 } sigtype_t;
 
 extern sigtype_t current_sigtype;

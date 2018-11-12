@@ -16,7 +16,7 @@
 
 #include <jsmn.h>
 #include <stdio.h>
-#include "validation_parser.h"
+#include "vote_parser.h"
 #include "json_parser.h"
 #include <limits.h>
 #include <zxmacros.h>
@@ -172,12 +172,12 @@ const char* json_validate(parsed_json_t* parsed_json,
     }
 
     char result = 0;
-    validation_parser_get_msg_height(parsed_json, raw_json, &result);
+    vote_parser_get_msg_height(parsed_json, raw_json, &result);
     if (result != 0) {
         return "Could not parse height";
     }
 
-    validation_parser_get_msg_round(parsed_json, raw_json, &result);
+    vote_parser_get_msg_round(parsed_json, raw_json, &result);
     if (result != 0) {
         return "Could not parse round";
     }
@@ -185,7 +185,7 @@ const char* json_validate(parsed_json_t* parsed_json,
     return NULL;
 }
 
-int64_t validation_parser_get_msg_height(
+int64_t vote_parser_get_msg_height(
     parsed_json_t *parsed_json,
     const char *raw_json,
     char *result) {
@@ -197,7 +197,7 @@ int64_t validation_parser_get_msg_height(
             result);
 }
 
-int8_t validation_parser_get_msg_round(
+int8_t vote_parser_get_msg_round(
     parsed_json_t *parsed_json,
     const char *raw_json,
     char *result)

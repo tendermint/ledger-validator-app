@@ -17,14 +17,24 @@
 
 #include "app_main.h"
 #include "view.h"
-#include "validation.h"
+#include "lib/vote.h"
+#include "lib/vote_parser.h"
 #include "signature.h"
 
 #include <os_io_seproxyhal.h>
 #include <os.h>
-
 #include <string.h>
-#include "validation_parser.h"
+
+#ifdef TESTING_ENABLED
+// Generate using always the same private data
+// to allow for reproducible results
+const uint8_t privateKeyDataTest[] = {
+        0x75, 0x56, 0x0e, 0x4d, 0xde, 0xa0, 0x63, 0x05,
+        0xc3, 0x6e, 0x2e, 0xb5, 0xf7, 0x2a, 0xca, 0x71,
+        0x2d, 0x13, 0x4c, 0xc2, 0xa0, 0x59, 0xbf, 0xe8,
+        0x7e, 0x9b, 0x5d, 0x55, 0xbf, 0x81, 0x3b, 0xd4
+};
+#endif
 
 uint8_t bip32_depth;
 uint32_t bip32_path[10];
@@ -131,8 +141,8 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
     }
 
     if (packageIndex == 1) {
-        validation_initialize();
-        validation_reset();
+        vote_initialize();
+        vote_reset();
         if (getBip32) {
             if (!extractBip32(&bip32_depth, bip32_path, rx, OFFSET_DATA)) {
                 THROW(APDU_CODE_DATA_INVALID);
@@ -141,27 +151,28 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
         }
     }
 
-//    if (validation_append(&(G_io_apdu_buffer[offset]), rx - offset) != NULL) {
-//	    THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
+    // TODO: Add validation
+//    if (vote_append(&(G_io_apdu_buffer[offset]), rx - offset) != NULL) {
+//        THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
 //    }
-    validation_append(&(G_io_apdu_buffer[offset]), rx - offset);
+
+    vote_append(&(G_io_apdu_buffer[offset]), rx - offset);
 
     return packageIndex == packageCount;
 }
 
-void extract_public_key()
-{
+void extract_public_key() {
     cx_ecfp_public_key_t publicKey;
     cx_ecfp_private_key_t privateKey;
     uint8_t privateKeyData[32];
 
     // Generate keys
     os_perso_derive_node_bip32(
-            CX_CURVE_Ed25519,
-            bip32_path,
-            bip32_depth,
-            privateKeyData,
-            NULL);
+        CX_CURVE_Ed25519,
+        bip32_path,
+        bip32_depth,
+        privateKeyData,
+        NULL);
 
     keys_ed25519(&publicKey, &privateKey, privateKeyData);
     memset(privateKeyData, 0, 32);
@@ -187,9 +198,9 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
             switch (G_io_apdu_buffer[OFFSET_INS]) {
             case INS_GET_VERSION: {
 #ifdef TESTING_ENABLED
-                G_io_apdu_buffer[0] = 0xFF;
+                G_io_apdu_buffer[0] = CLA_TEST;
 #else
-                G_io_apdu_buffer[0] = 0x55;
+                G_io_apdu_buffer[0] = CLA;
 #endif
                 G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
                 G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
@@ -216,7 +227,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 if (!process_chunk(tx, rx, true)) {
                     THROW(APDU_CODE_OK);
                 }
-                const char *error_msg = validation_parse();
+                const char *error_msg = vote_parse();
                 if (error_msg != NULL) {
                     int error_msg_length = strlen(error_msg);
                     os_memmove(G_io_apdu_buffer, error_msg, error_msg_length);
@@ -225,43 +236,40 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 char result = 0;
-                int8_t msg_round = validation_parser_get_msg_round(
-                        validation_get_parsed(),
-                        (const char *) validation_get_buffer(),
-                        &result);
+                int8_t msg_round = vote_parser_get_msg_round(vote_get_parsed(),
+                                                             (const char *) vote_get_buffer(),
+                                                             &result);
 
                 if (result != 0) {
                     THROW(APDU_CODE_DATA_INVALID);
                 }
 
-                int64_t height = validation_parser_get_msg_height(
-                        validation_get_parsed(),
-                        (const char *) validation_get_buffer(),
-                        &result);
+                int64_t height = vote_parser_get_msg_height(vote_get_parsed(),
+                                                            (const char *) vote_get_buffer(),
+                                                            &result);
 
                 if (result != 0) {
                     THROW(APDU_CODE_DATA_INVALID);
                 }
 
-                if (!validation_reference_get()->IsInitialized) {
+                if (!vote_reference_get()->IsInitialized) {
                     view_set_msg_round(msg_round);
                     view_set_msg_height(height);
-                    view_display_validation_init();
+                    view_display_vote_init();
                     *flags |= IO_ASYNCH_REPLY;
                     THROW(APDU_CODE_DATA_INVALID);
                     break;
                 }
 
-                if ((msg_round > validation_reference_get()->CurrentMsgRound)
-                    ||
-                    ((msg_round == validation_reference_get()->CurrentMsgRound)
-                     && height > validation_reference_get()->CurrentHeight)) {
+                if ((msg_round > vote_reference_get()->CurrentMsgRound) ||
+                    ((msg_round == vote_reference_get()->CurrentMsgRound)
+                        && height > vote_reference_get()->CurrentHeight)) {
 
-                    validation_reference_get()->CurrentMsgRound = msg_round;
-                    validation_reference_get()->CurrentHeight = height;
+                    vote_reference_get()->CurrentMsgRound = msg_round;
+                    vote_reference_get()->CurrentHeight = height;
                     view_set_state(msg_round, height);
 
-                    sign(tx);
+                    sign_vote(tx);
                 } else {
                     THROW(APDU_CODE_DATA_INVALID);
                 }
@@ -302,18 +310,17 @@ void reject_reference() {
 }
 
 void accept_reference(int8_t msg_round, int64_t height) {
-    validation_reference_get()->CurrentHeight = height;
-    validation_reference_get()->CurrentMsgRound = msg_round;
-    validation_reference_get()->IsInitialized = 1;
+    vote_reference_get()->CurrentHeight = height;
+    vote_reference_get()->CurrentMsgRound = msg_round;
+    vote_reference_get()->IsInitialized = 1;
     view_set_public_key("050b52687662f8ba73ed3f618a4d91c0d19d4a9ca5b966aa71f9523bc7d21f04");
 
     set_code(G_io_apdu_buffer, 0, APDU_CODE_OK);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
-    view_display_validation_processing();
+    view_display_vote_processing();
 }
 
-void sign(volatile uint32_t *tx)
-{
+void sign_vote(volatile uint32_t *tx) {
     // Generate keys
     cx_ecfp_public_key_t publicKey;
     cx_ecfp_private_key_t privateKey;
@@ -322,20 +329,20 @@ void sign(volatile uint32_t *tx)
     unsigned int length = 0;
 
     os_perso_derive_node_bip32(
-            CX_CURVE_Ed25519,
-            bip32_path, bip32_depth,
-            privateKeyData, NULL);
+        CX_CURVE_Ed25519,
+        bip32_path, bip32_depth,
+        privateKeyData, NULL);
 
     keys_ed25519(&publicKey, &privateKey, privateKeyData);
     memset(privateKeyData, 0, 32);
 
     sign_ed25519(
-            validation_get_buffer(),
-            validation_get_buffer_length(),
-            G_io_apdu_buffer,
-            IO_APDU_BUFFER_SIZE,
-            &length,
-            &privateKey);
+        vote_get_buffer(),
+        vote_get_buffer_length(),
+        G_io_apdu_buffer,
+        IO_APDU_BUFFER_SIZE,
+        &length,
+        &privateKey);
 
     *tx += length;
     THROW(APDU_CODE_OK);
@@ -346,8 +353,8 @@ void sign(volatile uint32_t *tx)
 void app_main() {
     volatile uint32_t rx = 0, tx = 0, flags = 0;
 
-    validation_reference_reset();
-    view_set_validation_reset_eh(&validation_reference_reset);
+    vote_reference_reset();
+    view_set_vote_reset_eh(&vote_reference_reset);
     view_set_accept_eh(&accept_reference);
     view_set_reject_eh(&reject_reference);
 
