@@ -24,14 +24,14 @@ void reset_parsed_json(parsed_json_t* parser_data)
 
 const char* json_parse(
         parsed_json_t *parsed_json,
-        const char *transaction) {
-    return json_parse_s(parsed_json, transaction, strlen(transaction));
+        const char *raw_json) {
+    return json_parse_s(parsed_json, raw_json, strlen(raw_json));
 
 }
 const char* json_parse_s(
         parsed_json_t *parsed_json,
-        const char *transaction,
-        int transaction_length) {
+        const char *raw_json,
+        int raw_json_length) {
 
     jsmn_parser parser;
     jsmn_init(&parser);
@@ -40,8 +40,8 @@ const char* json_parse_s(
 
     int num_tokens = jsmn_parse(
         &parser,
-        transaction,
-        transaction_length,
+        raw_json,
+        raw_json_length,
         parsed_json->Tokens,
         MAX_NUMBER_OF_TOKENS);
 

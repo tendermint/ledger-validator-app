@@ -47,10 +47,8 @@ typedef struct {
 void reset_parsed_json(parsed_json_t*);
 
 typedef struct {
-    const parsed_json_t *parsed_transaction;
-    unsigned short max_chars_per_key_line;
-    unsigned short max_chars_per_value_line;
-    const char *transaction;
+    const parsed_json_t *parsed_json;
+    const char* raw_json;
 } parsing_context_t;
 
 //---------------------------------------------
@@ -58,28 +56,28 @@ typedef struct {
 
 /// Parse json to create a token representation
 /// \param parsed_json
-/// \param transaction
-/// \param transaction_length
+/// \param raw_json
+/// \param raw_json_length
 /// \return Error message
 const char* json_parse_s(
-        parsed_json_t *parsed_json,
-        const char *transaction,
-        int transaction_length);
+        parsed_json_t* parsed_json,
+        const char* raw_json,
+        int raw_json_length);
 
 /// Parse json to create a token representation
 /// \param parsed_json
-/// \param transaction
+/// \param raw_json
 /// \return Error message
 const char* json_parse(
-        parsed_json_t *parsed_json,
-        const char *transaction);
+        parsed_json_t* parsed_json,
+        const char* raw_json);
 
 /// Get the number of elements in the array
 /// \param array_token_index
 /// \param parsed_transaction
 /// \return
 int array_get_element_count(int array_token_index,
-                            const parsed_json_t *parsed_transaction);
+                            const parsed_json_t* parsed_transaction);
 
 /// Get the token index of the nth array's element
 /// \param array_token_index
@@ -88,14 +86,14 @@ int array_get_element_count(int array_token_index,
 /// \return
 int array_get_nth_element(int array_token_index,
                           int element_index,
-                          const parsed_json_t *parsed_transaction);
+                          const parsed_json_t* parsed_json);
 
 /// Get the number of dictionary elements (key/value pairs) under given object
 /// \param object_token_index: token index of the parent object
 /// \param parsed_transaction
 /// \return
 int object_get_element_count(int object_token_index,
-                             const parsed_json_t *parsed_transaction);
+                             const parsed_json_t* parsed_json);
 
 /// Get the token index for the nth dictionary key
 /// \param object_token_index: token index of the parent object
@@ -104,7 +102,7 @@ int object_get_element_count(int object_token_index,
 /// \return
 int object_get_nth_key(int object_token_index,
                        int object_element_index,
-                       const parsed_json_t *parsed_transaction);
+                       const parsed_json_t* parsed_json);
 
 /// Get the token index for the nth dictionary value
 /// \param object_token_index: token index of the parent object
@@ -113,7 +111,7 @@ int object_get_nth_key(int object_token_index,
 /// \return
 int object_get_nth_value(int object_token_index,
                          int object_element_index,
-                         const parsed_json_t *parsed_transaction);
+                         const parsed_json_t* parsed_json);
 
 /// Get the token index of the value that matches the given key
 /// \param object_token_index: token index of the parent object
@@ -122,9 +120,9 @@ int object_get_nth_value(int object_token_index,
 /// \param transaction
 /// \return
 int object_get_value(int object_token_index,
-                     const char *key_name,
-                     const parsed_json_t *parsed_transaction,
-                     const char *transaction);
+                     const char* key_name,
+                     const parsed_json_t* parsed_json,
+                     const char* raw_json);
 
 
 #ifdef __cplusplus
