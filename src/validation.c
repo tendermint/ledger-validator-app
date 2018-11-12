@@ -14,7 +14,8 @@
 *  limitations under the License.
 ********************************************************************************/
 
-#include "transaction.h"
+#include "validation.h"
+
 #include "view.h"
 #include "apdu_codes.h"
 #include "json_parser.h"
@@ -25,7 +26,7 @@
 uint8_t ram_buffer[RAM_BUFFER_SIZE];
 
 // Flash
-#define FLASH_BUFFER_SIZE 10000
+#define FLASH_BUFFER_SIZE 16384
 typedef struct {
     uint8_t buffer[FLASH_BUFFER_SIZE];
 } storage_t;
@@ -33,7 +34,8 @@ typedef struct {
 storage_t N_appdata_impl __attribute__ ((aligned(64)));
 #define N_appdata (*(storage_t *)PIC(&N_appdata_impl))
 
-parsed_json_t parsed_transaction;
+parsed_json_t parsed_json;
+validation_reference_t validation_reference;
 
 void update_ram(buffer_state_t *buffer, uint8_t *data, int size) {
     os_memmove(buffer->data + buffer->pos, data, size);
@@ -43,7 +45,17 @@ void update_flash(buffer_state_t *buffer, uint8_t *data, int size) {
     nvm_write((void *) buffer->data + buffer->pos, data, size);
 }
 
-void transaction_initialize() {
+void validation_reference_reset()
+{
+    os_memset(&validation_reference, 0, sizeof(validation_reference_t));
+}
+
+validation_reference_t* validation_reference_get()
+{
+    return &validation_reference;
+}
+
+void validation_initialize() {
     append_buffer_delegate update_ram_delegate = &update_ram;
     append_buffer_delegate update_flash_delegate = &update_flash;
 
@@ -57,42 +69,44 @@ void transaction_initialize() {
     );
 }
 
-void transaction_reset() {
+void validation_reset() {
     buffering_reset();
 }
 
-char* transaction_append(unsigned char *buffer, uint32_t length) {
-    return buffering_append(buffer, length);
+void validation_append(unsigned char *buffer, uint32_t length) {
+    buffering_append(buffer, length);
 }
 
-uint32_t transaction_get_buffer_length() {
+uint32_t validation_get_buffer_length() {
     return buffering_get_buffer()->pos;
 }
 
-uint8_t *transaction_get_buffer() {
+const uint8_t* validation_get_buffer() {
     return buffering_get_buffer()->data;
 }
 
-const char* transaction_parse() {
-    const char *transaction_buffer = (const char *) transaction_get_buffer();
-    const char* error_msg = json_parse_s(&parsed_transaction, transaction_buffer, transaction_get_buffer_length());
+const char* validation_parse() {
+    const char* validation_buffer = (const char *) validation_get_buffer();
+    const char* error_msg = json_parse_s(
+            &parsed_json,
+            validation_buffer,
+            validation_get_buffer_length());
+
     if (error_msg != NULL) {
         return error_msg;
     }
-    error_msg = json_validate(&parsed_transaction, transaction_buffer);
+    error_msg = json_validate(&parsed_json, validation_buffer);
     if (error_msg != NULL) {
         return error_msg;
     }
     parsing_context_t context;
-    context.transaction = transaction_buffer;
-    context.max_chars_per_key_line = MAX_CHARS_PER_KEY_LINE;
-    context.max_chars_per_value_line = MAX_CHARS_PER_VALUE_LINE;
-    context.parsed_transaction = &parsed_transaction;
+    context.raw_json = validation_buffer;
+    context.parsed_json = &parsed_json;
     set_parsing_context(context);
     set_copy_delegate(&os_memmove);
     return NULL;
 }
 
-parsed_json_t *transaction_get_parsed() {
-    return &parsed_transaction;
+parsed_json_t* validation_get_parsed() {
+    return &parsed_json;
 }

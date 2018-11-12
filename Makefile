@@ -27,10 +27,11 @@ SCRIPT_LD:=$(CURDIR)/script.ld
 include $(BOLOS_SDK)/Makefile.defines
 
 # Main app configuration
-APPNAME = "COSMOS"
-APPVERSION_M=1
+
+APPNAME = "COSMOS-VAL"
+APPVERSION_M=0
 APPVERSION_N=0
-APPVERSION_P=0
+APPVERSION_P=1
 
 APP_LOAD_PARAMS = --appFlags 0x00 --delete $(COMMON_LOAD_PARAMS) --path "44'/118'"
 ICONNAME=$(CURDIR)/icon.gif
@@ -52,18 +53,13 @@ DEFINES += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=7 IO_HID_EP_LENGTH=64
 
 DEFINES += LEDGER_MAJOR_VERSION=$(APPVERSION_M) LEDGER_MINOR_VERSION=$(APPVERSION_N) LEDGER_PATCH_VERSION=$(APPVERSION_P)
 
-SDK_SOURCE_PATH += lib_u2f
-DEFINES   += HAVE_U2F HAVE_IO_U2F
 DEFINES   += USB_SEGMENT_SIZE=64
-DEFINES   += U2F_PROXY_MAGIC=\"CSM\"
-DEFINES   += U2F_MAX_MESSAGE_SIZE=264 #257+5+2
 
 DEFINES   += HAVE_BOLOS_APP_STACK_CANARY
 DEFINES   += LEDGER_SPECIFIC
 
 #Feature temporarily disabled
-#DEFINES += TESTING_ENABLED
-#DEFINES += FEATURE_ED25519
+DEFINES += TESTING_ENABLED
 
 # Compiler, assembler, and linker
 
@@ -97,7 +93,7 @@ LDLIBS   += -lm -lgcc -lc
 
 ##########################
 
-APP_SOURCE_PATH += src deps/jsmn/src lib deps/ledger-zxlib/include deps/ledger-zxlib/src
+APP_SOURCE_PATH += src deps/jsmn/src deps/ledger-zxlib/include deps/ledger-zxlib/src
 SDK_SOURCE_PATH += lib_stusb lib_u2f lib_stusb_impl
 
 #include $(BOLOS_SDK)/Makefile.glyphs

@@ -33,20 +33,20 @@ extern "C" {
 /// \param item_index_to_display
 /// \param chunk_index
 /// \return
-int display_value(char *value,
-                  int value_length,
-                  int token_index,
-                  int *current_item_index,
-                  int item_index_to_display,
-                  int *chunk_index);
+//int display_value(char *value,
+//                  int value_length,
+//                  int token_index,
+//                  int *current_item_index,
+//                  int item_index_to_display,
+//                  int *chunk_index);
 
 /// Update key characters from json transaction read from the token_index element.
 /// \param key
 /// \param key_length
 /// \param token_index
-void display_key(char *key,
-                 int key_length,
-                 int token_index);
+//void display_key(char *key,
+//                 int key_length,
+//                 int token_index);
 
 /// Helper function that gets key and value by parsing
 /// `msgs` blob basd on TXSpec
@@ -59,18 +59,18 @@ void display_key(char *key,
 /// \param token_index, index of the token that points to a single msg json element
 /// \param chunk_index, [optional] value is split into chunks if it's very long, here we specify which chunk we should use
 /// \return
-int display_arbitrary_item(int item_index_to_display,
-                           char *key,
-                           int key_length,
-                           char *value,
-                           int value_length,
-                           int token_index,
-                           int *chunk_index);
+//int display_arbitrary_item(int item_index_to_display,
+//                           char *key,
+//                           int key_length,
+//                           char *value,
+//                           int value_length,
+//                           int token_index,
+//                           int *chunk_index);
 
 /// Returns number of pages that we'll have for the recursive parsing of a single msg json blob.
 /// \param token_index
 /// \return
-int display_get_arbitrary_items_count(int token_index);
+//int display_get_arbitrary_items_count(int token_index);
 
 /// This is the main function called from ledger that updates key and value strings
 /// that are going to be displayed in the UI.
@@ -81,31 +81,31 @@ int display_get_arbitrary_items_count(int token_index);
 /// \param page_index, index of the UI page for which key and value will be returned
 /// \param chunk_index, [optional] value is split into chunks if it's very long, here we specify which chunk we should use
 /// \return
-int transaction_get_display_key_value(char *key,
-                                      int key_length,
-                                      char *value,
-                                      int value_length,
-                                      int page_index,
-                                      int *chunk_index);
+//int transaction_get_display_key_value(char *key,
+//                                      int key_length,
+//                                      char *value,
+//                                      int value_length,
+//                                      int page_index,
+//                                      int *chunk_index);
 
 /// Return number of UI pages that we'll have for the current json transaction.
 /// \return
-int transaction_get_display_pages();
+//int transaction_get_display_pages();
 
 /// Validate json transaction
 /// \param parsed_transacton
 /// \param transaction
 /// \return
-const char* json_validate(
-        parsed_json_t* parsed_transaction,
-        const char *transaction);
+//const char* json_validate(
+//        parsed_json_t* parsed_transaction,
+//        const char *transaction);
 
 //---------------------------------------------
 // Delegates
 
-typedef void(*copy_delegate)(void *dst, const void *source, size_t size);
-void set_copy_delegate(copy_delegate delegate);
-void set_parsing_context(parsing_context_t context);
+//typedef void(*copy_delegate)(void *dst, const void *source, size_t size);
+//void set_copy_delegate(copy_delegate delegate);
+//void set_parsing_context(parsing_context_t context);
 
 //---------------------------------------------
 
