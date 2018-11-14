@@ -194,9 +194,9 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
             switch (G_io_apdu_buffer[OFFSET_INS]) {
             case INS_GET_VERSION: {
 #ifdef TESTING_ENABLED
-                G_io_apdu_buffer[0] = CLA_TEST;
+                G_io_apdu_buffer[0] = 0xFF;
 #else
-                G_io_apdu_buffer[0] = CLA;
+                G_io_apdu_buffer[0] = 0;
 #endif
                 G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
                 G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
@@ -226,13 +226,9 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 
                 parse_error_t error_code = vote_parse();
 
-                switch (error_code){
-                parse_ok:
-                    break;
-                default:
-//                    int error_msg_length = strlen(error_msg);
-//                    os_memmove(G_io_apdu_buffer, error_msg, error_msg_length);
-//                    *tx += sizeof(error_msg_length);
+                if (error_code!=parse_ok){
+                    G_io_apdu_buffer[*tx] = (uint8_t)error_code;
+                    *tx++;
                     THROW(APDU_CODE_DATA_INVALID);
                 }
 
@@ -243,7 +239,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     THROW(APDU_CODE_DATA_INVALID);
                 }
 
-                if (!vote_ref->IsInitialized) {
+                if (!vote_ref->isInitialized) {
                     view_set_msg_round(vote->Round);
                     view_set_msg_height(vote->Height);
                     view_display_vote_init();
@@ -252,12 +248,12 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     break;
                 }
 
-                if ((vote->Round > vote_ref->CurrentMsgRound) ||
-                    ((vote->Round == vote_ref->CurrentMsgRound)
-                        && vote->Height > vote_ref->CurrentHeight)) {
+                if ((vote->Round > vote_ref->vote.Round) ||
+                    ((vote->Round == vote_ref->vote.Round)
+                        && vote->Height > vote_ref->vote.Height)) {
 
-                    vote_ref->CurrentMsgRound = vote->Round;
-                    vote_ref->CurrentHeight = vote->Height;
+                    vote_ref->vote.Round = vote->Round;
+                    vote_ref->vote.Height = vote->Height;
                     view_set_state(vote->Round, vote->Height);
 
                     // TODO: This is probably incorrect, it should sign the whole vote
@@ -302,9 +298,11 @@ void reject_reference() {
 }
 
 void accept_reference(int8_t msg_round, int64_t height) {
-    vote_reference_get()->CurrentHeight = height;
-    vote_reference_get()->CurrentMsgRound = msg_round;
-    vote_reference_get()->IsInitialized = 1;
+    vote_reference_get()->vote.Height = height;
+    vote_reference_get()->vote.Round = msg_round;
+    vote_reference_get()->isInitialized = 1;
+
+    // TODO: Show the correct public key
     view_set_public_key("050b52687662f8ba73ed3f618a4d91c0d19d4a9ca5b966aa71f9523bc7d21f04");
 
     set_code(G_io_apdu_buffer, 0, APDU_CODE_OK);

@@ -16,14 +16,30 @@
 
 #pragma once
 #include <inttypes.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
+  uint8_t Type;
   int64_t Height;
-  int8_t  Round;
+  int8_t Round;
 } vote_t;
 
 typedef enum {
-  parse_ok = 0
+  parse_ok = 0,
+  parse_unexpected_buffer_end = 1,
+  parse_unexpected_field = 2,
+  parse_unexpected_wire_type = 3,
+  parse_unexpected_type_value = 4,
+  parse_unexpected_height_value = 5,
+  parse_unexpected_round_value = 6
 } parse_error_t;
 
-parse_error_t vote_amino_parse(uint8_t* buffer, uint32_t size, vote_t* vote);
+parse_error_t vote_amino_parse(uint8_t *buffer, size_t size, vote_t *vote);
+
+#ifdef __cplusplus
+}
+#endif

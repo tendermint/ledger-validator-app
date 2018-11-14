@@ -17,11 +17,8 @@
 #include "vote_parser.h"
 
 typedef struct {
-  int8_t  IsInitialized;
-
-  // TODO: Use vote here
-  int64_t CurrentHeight;
-  int8_t  CurrentMsgRound;
+  int8_t isInitialized;
+  vote_t vote;
 } vote_reference_t;
 
 void vote_reference_reset();
