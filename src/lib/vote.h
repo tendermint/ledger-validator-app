@@ -14,41 +14,43 @@
 *  limitations under the License.
 ********************************************************************************/
 #pragma once
+#include "vote_parser.h"
 
-#include "validation_parser.h"
-#include "os.h"
+typedef struct {
+  int8_t isInitialized;
+  vote_t vote;
+} vote_reference_t;
 
-// TODO: Rename to disambiguate
-void validation_reference_reset();
-// TODO: Rename to disambiguate
-validation_reference_t* validation_reference_get();
+void vote_reference_reset();
 
-// Initializes validation context
-void validation_initialize();
+vote_reference_t* vote_reference_get();
 
-/// Clears the transaction buffer
-void validation_reset();
+// Initializes vote context
+void vote_initialize();
+
+/// Clears the vote buffer
+void vote_reset();
 
 /// Appends buffer to the end of the current transaction buffer
 /// Transaction buffer will grow until it reaches the maximum allowed size
 /// \param buffer
 /// \param length
-void validation_append(unsigned char *buffer,
-                       uint32_t length);
+/// \return number of appended bytes
+uint32_t vote_append(unsigned char *buffer, uint32_t length);
 
-/// Returns size of the raw json transaction buffer
+/// Returns size of the raw buffer
 /// \return
-uint32_t validation_get_buffer_length();
+uint32_t vote_get_buffer_length();
 
-/// Returns the raw json transaction buffer
+/// Returns the raw buffer
 /// \return
-const uint8_t* validation_get_buffer();
+const uint8_t* vote_get_buffer();
 
-/// Parse json message stored in transaction buffer
+/// Parse vote in buffer
 /// This function should be called as soon as full buffer data is loaded.
-/// \return It returns NULL if json is valid or error message otherwise.
-const char* validation_parse();
+/// \return It an error core or PARSE_OK
+parse_error_t vote_parse();
 
-/// Returns parsed representation of the transaction message
+/// Returns parsed vote
 /// \return
-parsed_json_t* validation_get_parsed();
+vote_t* vote_get();

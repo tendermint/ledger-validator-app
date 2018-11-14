@@ -28,11 +28,10 @@
 #define OFFSET_PCK_COUNT            3  //< Package count offset
 #define OFFSET_DATA                 5  //< Data offset
 
-#define INS_GET_VERSION                 0
-#define INS_PUBLIC_KEY_ED25519          1
-#define INS_SIGN_ED25519                4
+#define INS_GET_VERSION             0
+#define INS_PUBLIC_KEY_ED25519      1
+#define INS_SIGN_ED25519            2
 
 void app_init();
 void app_main();
-void sign(volatile uint32_t *tx);
-
+void sign_vote(volatile uint32_t *tx);
