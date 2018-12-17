@@ -14,16 +14,17 @@
 *  limitations under the License.
 ********************************************************************************/
 #pragma once
+
 #include "vote_parser.h"
 
 typedef struct {
-  int8_t isInitialized;
-  vote_t vote;
+    int8_t isInitialized;
+    vote_t vote;
 } vote_reference_t;
 
 void vote_reference_reset();
 
-vote_reference_t* vote_reference_get();
+vote_reference_t *vote_reference_get();
 
 // Initializes vote context
 void vote_initialize();
@@ -44,7 +45,7 @@ uint32_t vote_get_buffer_length();
 
 /// Returns the raw buffer
 /// \return
-const uint8_t* vote_get_buffer();
+const uint8_t *vote_get_buffer();
 
 /// Parse vote in buffer
 /// This function should be called as soon as full buffer data is loaded.
@@ -53,4 +54,4 @@ parse_error_t vote_parse();
 
 /// Returns parsed vote
 /// \return
-vote_t* vote_get();
+vote_t *vote_get();

@@ -31,10 +31,10 @@
 #define FALSE 0
 
 enum UI_DISPLAY_MODE {
-  VALUE_SCROLLING,
-  KEY_SCROLLING_NO_VALUE,
-  KEY_SCROLLING_SHORT_VALUE,
-  PENDING
+    VALUE_SCROLLING,
+    KEY_SCROLLING_NO_VALUE,
+    KEY_SCROLLING_SHORT_VALUE,
+    PENDING
 };
 
 ux_state_t ux;
@@ -72,69 +72,69 @@ const ux_menu_entry_t menu_about[];
 
 const ux_menu_entry_t menu_main[] = {
 #ifdef TESTING_ENABLED
-    {NULL, NULL, 0, NULL, "Cosmos TEST!", "Validator", 0, 0},
+        {NULL, NULL, 0, NULL, "Cosmos TEST!", "Validator", 0, 0},
 #else
-    {NULL, NULL, 0, &C_icon_dashboard, "Cosmos", "Validator", 0, 0},
+        {NULL, NULL, 0, &C_icon_dashboard, "Cosmos", "Validator", 0, 0},
 #endif
-    {menu_about, NULL, 0, NULL, "About", NULL, 0, 0},
-    {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
-    UX_MENU_END
+        {menu_about, NULL, 0, NULL, "About", NULL, 0, 0},
+        {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
+        UX_MENU_END
 };
 
 const ux_menu_entry_t menu_about[] = {
-    {NULL, NULL, 0, NULL, "Version", APPVERSION, 0, 0},
-    {menu_main, NULL, 2, &C_icon_back, "Back", NULL, 61, 40},
-    UX_MENU_END
+        {NULL, NULL, 0, NULL, "Version", APPVERSION, 0, 0},
+        {menu_main, NULL, 2, &C_icon_back, "Back", NULL, 61, 40},
+        UX_MENU_END
 };
 
 static const bagl_element_t bagl_ui_initialize_transaction[] = {
-    UI_FillRectangle(0, 0, 0, 128, 32, 0x000000, 0xFFFFFF),
-    UI_Icon(0, 0, 0, 7, 7, BAGL_GLYPH_ICON_CROSS),
-    UI_Icon(0, 128 - 7, 0, 7, 7, BAGL_GLYPH_ICON_CHECK),
-    UI_LabelLine(1, 0, 8, 128, 11, 0xFFFFFF, 0x000000, "Init validation"),
-    UI_LabelLine(1, 0, 19, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_height),
-    UI_LabelLine(1, 0, 30, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_round),
+        UI_FillRectangle(0, 0, 0, 128, 32, 0x000000, 0xFFFFFF),
+        UI_Icon(0, 0, 0, 7, 7, BAGL_GLYPH_ICON_CROSS),
+        UI_Icon(0, 128 - 7, 0, 7, 7, BAGL_GLYPH_ICON_CHECK),
+        UI_LabelLine(1, 0, 8, 128, 11, 0xFFFFFF, 0x000000, "Init validation"),
+        UI_LabelLine(1, 0, 19, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_height),
+        UI_LabelLine(1, 0, 30, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_round),
 };
 
 static const bagl_element_t bagl_ui_validating_transaction[] = {
-    UI_FillRectangle(0, 0, 0, 128, 32, 0x000000, 0xFFFFFF),
-    UI_LabelLine(1, 0, 8, 128, 11, 0xFFFFFF, 0x000000, "Validating"),
+        UI_FillRectangle(0, 0, 0, 128, 32, 0x000000, 0xFFFFFF),
+        UI_LabelLine(1, 0, 8, 128, 11, 0xFFFFFF, 0x000000, "Validating"),
 
-    // 4 labels..
-    // "Height:" [value]
-    // "PK"      [PK]
-    UI_LabelLine(1, 0, 19, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_state),
-    UI_LabelLineScrolling(1, 0, 30, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_publicKey),
+        // 4 labels..
+        // "Height:" [value]
+        // "PK"      [PK]
+        UI_LabelLine(1, 0, 19, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_state),
+        UI_LabelLineScrolling(1, 0, 30, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_publicKey),
 };
 
 static unsigned int bagl_ui_initialize_transaction_button(
-    unsigned int button_mask,
-    unsigned int button_mask_counter) {
+        unsigned int button_mask,
+        unsigned int button_mask_counter) {
 
     switch (button_mask) {
 
         // Press left to progress to the previous element
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT: {
-        if (eh_reject != NULL) {
-            eh_reject();
+        case BUTTON_EVT_RELEASED | BUTTON_LEFT: {
+            if (eh_reject != NULL) {
+                eh_reject();
+            }
+            break;
         }
-        break;
-    }
 
-        // Press right to progress to the next element
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT: {
-        if (eh_accept != NULL) {
-            eh_accept(data_msg_round, data_msg_height);
+            // Press right to progress to the next element
+        case BUTTON_EVT_RELEASED | BUTTON_RIGHT: {
+            if (eh_accept != NULL) {
+                eh_accept(data_msg_round, data_msg_height);
+            }
+            break;
         }
-        break;
-    }
     }
     return 0;
 }
 
 static unsigned int bagl_ui_validating_transaction_button(
-    unsigned int button_mask,
-    unsigned int button_mask_counter) {
+        unsigned int button_mask,
+        unsigned int button_mask_counter) {
 
     switch (button_mask) {
         // We dont allow people to exit this mode

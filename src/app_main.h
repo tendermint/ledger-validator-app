@@ -33,5 +33,7 @@
 #define INS_SIGN_ED25519            2
 
 void app_init();
+
 void app_main();
+
 void sign_vote(volatile uint32_t *tx);

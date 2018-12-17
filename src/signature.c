@@ -42,17 +42,16 @@ int sign_ed25519(const uint8_t *message,
 
     unsigned int info = 0;
 
-    *signature_length = cx_eddsa_sign(
-        privateKey,
-        CX_LAST,
-        CX_SHA512,
-        message_digest,
-        CX_SHA512_SIZE,
-        NULL,
-        0,
-        signature,
-        signature_capacity,
-        &info);
+    *signature_length = cx_eddsa_sign(privateKey,
+                                      CX_LAST,
+                                      CX_SHA512,
+                                      message_digest,
+                                      CX_SHA512_SIZE,
+                                      NULL,
+                                      0,
+                                      signature,
+                                      signature_capacity,
+                                      &info);
 
     os_memset(privateKey, 0, sizeof(privateKey));
     return 1;

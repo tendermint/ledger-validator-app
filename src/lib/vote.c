@@ -45,13 +45,11 @@ void update_flash(buffer_state_t *buffer, uint8_t *data, int size) {
     nvm_write((void *) buffer->data + buffer->pos, data, size);
 }
 
-void vote_reference_reset()
-{
+void vote_reference_reset() {
     os_memset(&vote_reference, 0, sizeof(vote_reference_t));
 }
 
-vote_reference_t* vote_reference_get()
-{
+vote_reference_t *vote_reference_get() {
     return &vote_reference;
 }
 
@@ -59,13 +57,12 @@ void vote_initialize() {
     append_buffer_delegate update_ram_delegate = &update_ram;
     append_buffer_delegate update_flash_delegate = &update_flash;
 
-    buffering_init(
-        ram_buffer,
-        sizeof(ram_buffer),
-        update_ram_delegate,
-        N_appdata.buffer,
-        sizeof(N_appdata.buffer),
-        update_flash_delegate
+    buffering_init(ram_buffer,
+                   sizeof(ram_buffer),
+                   update_ram_delegate,
+                   N_appdata.buffer,
+                   sizeof(N_appdata.buffer),
+                   update_flash_delegate
     );
 }
 
@@ -81,34 +78,19 @@ uint32_t vote_get_buffer_length() {
     return buffering_get_buffer()->pos;
 }
 
-const uint8_t* vote_get_buffer() {
+const uint8_t *vote_get_buffer() {
     return buffering_get_buffer()->data;
 }
 
 parse_error_t vote_parse() {
-    const uint8_t* vote_buffer = vote_get_buffer();
+    const uint8_t *vote_buffer = vote_get_buffer();
+    const uint32_t vote_buffer_length = vote_get_buffer_length();
 
-//    const char* error_msg = json_parse_s(
-//            &parsed_json,
-//            vote_buffer,
-//            vote_get_buffer_length());
-//
-//    if (error_msg != NULL) {
-//        return error_msg;
-//    }
-//    error_msg = json_validate(&parsed_json, vote_buffer);
-//    if (error_msg != NULL) {
-//        return error_msg;
-//    }
-//    parsing_context_t context;
-//    context.raw_json = vote_buffer;
-//    context.parsed_json = &parsed_json;
-//    set_parsing_context(context);
-//    set_copy_delegate(&os_memmove);
+    parse_error_t error = vote_amino_parse(vote_buffer, vote_buffer_length, &vote);
 
-    return parse_ok;
+    return error;
 }
 
-vote_t* vote_get() {
+vote_t *vote_get() {
     return &vote;
 }
