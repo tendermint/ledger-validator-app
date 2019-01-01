@@ -34,7 +34,7 @@ typedef struct {
 storage_t N_appdata_impl __attribute__ ((aligned(64)));
 #define N_appdata (*(storage_t *)PIC(&N_appdata_impl))
 
-vote_reference_t vote_reference;
+vote_state_t vote_state;
 vote_t vote;
 
 void update_ram(buffer_state_t *buffer, uint8_t *data, int size) {
@@ -45,12 +45,12 @@ void update_flash(buffer_state_t *buffer, uint8_t *data, int size) {
     nvm_write((void *) buffer->data + buffer->pos, data, size);
 }
 
-void vote_reference_reset() {
-    os_memset(&vote_reference, 0, sizeof(vote_reference_t));
+void vote_state_reset() {
+    os_memset(&vote_state, 0, sizeof(vote_state_t));
 }
 
-vote_reference_t *vote_reference_get() {
-    return &vote_reference;
+vote_state_t *vote_state_get() {
+    return &vote_state;
 }
 
 void vote_initialize() {

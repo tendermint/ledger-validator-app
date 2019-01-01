@@ -128,12 +128,17 @@ parse_error_t vote_amino_parse(const uint8_t *buffer, size_t size, vote_t *vote)
                 }
             }
         }
+        // NOTE: Other fields are not parsed. In particular BlockID
     }
 
     // Validate values
-    if (vote->Type == 0 || vote->Type > 2) {
-        // vote type default value 0 is not valid
-        return parse_unexpected_type_value;
+    switch (vote->Type) {
+        case TYPE_PREVOTE:
+        case TYPE_PRECOMMIT:
+        case TYPE_PROPOSAL:
+            break;
+        default:
+            return parse_unexpected_type_value;
     }
     if (vote->Height < 0) {
         return parse_unexpected_height_value;
@@ -141,6 +146,8 @@ parse_error_t vote_amino_parse(const uint8_t *buffer, size_t size, vote_t *vote)
     if (vote->Round < 0) {
         return parse_unexpected_height_value;
     }
+
+    // NOTE: for proposal POLRound is not parsed or verified
 
     return parse_ok;
 }

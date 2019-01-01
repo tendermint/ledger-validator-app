@@ -15,16 +15,17 @@
 ********************************************************************************/
 #pragma once
 
+#include "vote_def.h"
 #include "vote_parser.h"
 
 typedef struct {
     int8_t isInitialized;
     vote_t vote;
-} vote_reference_t;
+} vote_state_t;
 
-void vote_reference_reset();
+void vote_state_reset();
 
-vote_reference_t *vote_reference_get();
+vote_state_t *vote_state_get();
 
 // Initializes vote context
 void vote_initialize();

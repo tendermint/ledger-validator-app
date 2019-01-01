@@ -13,28 +13,8 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-
 #pragma once
 
-#include "vote_def.h"
+#include "vote.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef enum {
-    parse_ok = 0,
-    parse_unexpected_buffer_end = 1,
-    parse_unexpected_field = 2,
-    parse_unexpected_wire_type = 3,
-    parse_unexpected_type_value = 4,
-    parse_unexpected_height_value = 5,
-    parse_unexpected_round_value = 6,
-    parse_unexpected_buffer_size = 7
-} parse_error_t;
-
-parse_error_t vote_amino_parse(const uint8_t *buffer, size_t size, vote_t *vote);
-
-#ifdef __cplusplus
-}
-#endif
+uint8_t try_state_transition(vote_t *vote);

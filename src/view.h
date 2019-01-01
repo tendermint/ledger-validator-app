@@ -32,9 +32,9 @@ enum UI_STATE {
 extern enum UI_STATE view_uiState;
 
 //------ Delegates definitions
-typedef void (*delegate_accept_reference_signature)(int8_t msg_round, int64_t height);
+typedef void (*delegate_accept_vote_state_signature)(int8_t msg_round, int64_t height);
 
-typedef void (*delegate_reject_reference_signature)();
+typedef void (*delegate_reject_vote_state_signature)();
 
 typedef void (*delegate_vote_reset)();
 
@@ -43,10 +43,10 @@ typedef void (*delegate_vote_reset)();
 void view_set_vote_reset_eh(delegate_vote_reset delegate);
 
 /// Set accept reference signature event handler
-void view_set_accept_eh(delegate_accept_reference_signature delegate);
+void view_set_accept_eh(delegate_accept_vote_state_signature delegate);
 
 /// Set reject reference signature event handler
-void view_set_reject_eh(delegate_reject_reference_signature delegate);
+void view_set_reject_eh(delegate_reject_vote_state_signature delegate);
 
 //------ Common functions
 /// view_init

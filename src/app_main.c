@@ -236,34 +236,31 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     }
 
                     vote_t *vote = vote_get();
-                    vote_reference_t *vote_ref = vote_reference_get();
+                    vote_state_t *vote_state = vote_state_get();
 
-                    if (vote == NULL || vote_ref == NULL) {
+                    if (vote == NULL || vote_state == NULL) {
                         THROW(APDU_CODE_DATA_INVALID);
                     }
 
-                    if (!vote_ref->isInitialized) {
+                    if (!vote_state->isInitialized) {
+                        // Show values and ask user before setting state
                         view_set_msg_round(vote->Round);
                         view_set_msg_height(vote->Height);
                         view_display_vote_init();
                         *flags |= IO_ASYNCH_REPLY;
                         THROW(APDU_CODE_DATA_INVALID);
-                        break;
                     }
 
-                    if ((vote->Round > vote_ref->vote.Round) ||
-                        ((vote->Round == vote_ref->vote.Round)
-                         && vote->Height > vote_ref->vote.Height)) {
-
-                        vote_ref->vote.Round = vote->Round;
-                        vote_ref->vote.Height = vote->Height;
+                    // Check with vote FSM if vote can be signed
+                    if (try_state_transition(vote)) {
                         view_set_state(vote->Round, vote->Height);
 
                         // TODO: This is probably incorrect, it should sign the whole vote
                         sign_vote(tx);
-                    } else {
-                        THROW(APDU_CODE_DATA_INVALID);
+                        THROW(APDU_CODE_OK);
                     }
+
+                    THROW(APDU_CODE_DATA_INVALID);
                 }
                     break;
 
@@ -297,16 +294,16 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     END_TRY;
 }
 
-void reject_reference() {
+void reject_vote_state() {
     set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
     view_display_main_menu();
 }
 
-void accept_reference(int8_t msg_round, int64_t height) {
-    vote_reference_get()->vote.Height = height;
-    vote_reference_get()->vote.Round = msg_round;
-    vote_reference_get()->isInitialized = 1;
+void accept_vote_state(int8_t msg_round, int64_t height) {
+    vote_state_get()->vote.Height = height;
+    vote_state_get()->vote.Round = msg_round;
+    vote_state_get()->isInitialized = 1;
 
     // TODO: Show the correct public key
     view_set_public_key("050b52687662f8ba73ed3f618a4d91c0d19d4a9ca5b966aa71f9523bc7d21f04");
@@ -341,7 +338,6 @@ void sign_vote(volatile uint32_t *tx) {
             &privateKey);
 
     *tx += length;
-    THROW(APDU_CODE_OK);
 }
 
 #pragma clang diagnostic push
@@ -350,10 +346,10 @@ void sign_vote(volatile uint32_t *tx) {
 void app_main() {
     volatile uint32_t rx = 0, tx = 0, flags = 0;
 
-    vote_reference_reset();
-    view_set_vote_reset_eh(&vote_reference_reset);
-    view_set_accept_eh(&accept_reference);
-    view_set_reject_eh(&reject_reference);
+    vote_state_reset();
+    view_set_vote_reset_eh(&vote_state_reset);
+    view_set_accept_eh(&accept_vote_state);
+    view_set_reject_eh(&reject_vote_state);
 
     for (;;) {
         volatile uint16_t sw = 0;

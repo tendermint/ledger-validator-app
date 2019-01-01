@@ -50,19 +50,19 @@ int8_t data_msg_round;
 int64_t data_msg_height;
 
 //------ Event handlers
-delegate_accept_reference_signature eh_accept = NULL;
-delegate_reject_reference_signature eh_reject = NULL;
+delegate_accept_vote_state_signature eh_accept = NULL;
+delegate_reject_vote_state_signature eh_reject = NULL;
 delegate_vote_reset eh_vote_reset = NULL;
 
 void view_set_vote_reset_eh(delegate_vote_reset delegate) {
     eh_vote_reset = delegate;
 }
 
-void view_set_accept_eh(delegate_accept_reference_signature delegate) {
+void view_set_accept_eh(delegate_accept_vote_state_signature delegate) {
     eh_accept = delegate;
 }
 
-void view_set_reject_eh(delegate_reject_reference_signature delegate) {
+void view_set_reject_eh(delegate_reject_vote_state_signature delegate) {
     eh_reject = delegate;
 }
 
