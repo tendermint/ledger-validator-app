@@ -17,7 +17,7 @@
 
 #include "app_main.h"
 #include "view.h"
-#include "lib/vote.h"
+#include "lib/vote_buffer.h"
 #include "signature.h"
 
 #include <os_io_seproxyhal.h>

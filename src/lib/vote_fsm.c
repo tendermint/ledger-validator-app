@@ -50,7 +50,6 @@ uint8_t validate_state_transition(vote_t *v, vote_state_t *vote_state) {
     return 1;
 }
 
-
 uint8_t try_state_transition(vote_t *vote) {
     vote_state_t *vote_state = vote_state_get();
 

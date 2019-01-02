@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "vote_def.h"
+#include "vote.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -15,44 +15,35 @@
 ********************************************************************************/
 #pragma once
 
-#include "vote_def.h"
-#include "vote_parser.h"
+#include <inttypes.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define TYPE_PREVOTE        0x01
+#define TYPE_PRECOMMIT      0x02
+#define TYPE_PROPOSAL       0x20
+
 
 typedef struct {
-    int8_t isInitialized;
-    vote_t vote;
+    uint8_t Type;
+    int64_t Height;
+    int8_t Round;
+} vote_t;
+
+typedef struct {
+  int8_t isInitialized;
+  vote_t vote;
 } vote_state_t;
 
 void vote_state_reset();
 
 vote_state_t *vote_state_get();
 
-// Initializes vote context
-void vote_initialize();
-
-/// Clears the vote buffer
-void vote_reset();
-
-/// Appends buffer to the end of the current transaction buffer
-/// Transaction buffer will grow until it reaches the maximum allowed size
-/// \param buffer
-/// \param length
-/// \return number of appended bytes
-uint32_t vote_append(unsigned char *buffer, uint32_t length);
-
-/// Returns size of the raw buffer
-/// \return
-uint32_t vote_get_buffer_length();
-
-/// Returns the raw buffer
-/// \return
-const uint8_t *vote_get_buffer();
-
-/// Parse vote in buffer
-/// This function should be called as soon as full buffer data is loaded.
-/// \return It an error core or PARSE_OK
-parse_error_t vote_parse();
-
-/// Returns parsed vote
-/// \return
 vote_t *vote_get();
+
+#ifdef __cplusplus
+}
+#endif

@@ -15,15 +15,31 @@
 ********************************************************************************/
 #pragma once
 
-#include <inttypes.h>
-#include <stddef.h>
+#include "vote.h"
+#include "vote_parser.h"
 
-#define TYPE_PREVOTE        0x01
-#define TYPE_PRECOMMIT      0x02
-#define TYPE_PROPOSAL       0x20
+// Initializes vote context
+void vote_initialize();
 
-typedef struct {
-    uint8_t Type;
-    int64_t Height;
-    int8_t Round;
-} vote_t;
+/// Clears the vote buffer
+void vote_reset();
+
+/// Appends buffer to the end of the current transaction buffer
+/// Transaction buffer will grow until it reaches the maximum allowed size
+/// \param buffer
+/// \param length
+/// \return number of appended bytes
+uint32_t vote_append(unsigned char *buffer, uint32_t length);
+
+/// Returns size of the raw buffer
+/// \return
+uint32_t vote_get_buffer_length();
+
+/// Returns the raw buffer
+/// \return
+const uint8_t *vote_get_buffer();
+
+/// Parse vote in buffer
+/// This function should be called as soon as full buffer data is loaded.
+/// \return It an error core or PARSE_OK
+parse_error_t vote_parse();
