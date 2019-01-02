@@ -18,6 +18,7 @@
 #include "app_main.h"
 #include "view.h"
 #include "lib/vote_buffer.h"
+#include "lib/vote_fsm.h"
 #include "signature.h"
 
 #include <os_io_seproxyhal.h>
@@ -124,15 +125,6 @@ bool extractBip32(uint8_t *depth, uint32_t path[10], uint32_t rx, uint32_t offse
     return 1;
 }
 
-void extractPubKey(unsigned char *outputBuffer, cx_ecfp_public_key_t *pubKey) {
-    for (int i = 0; i < 32; i++) {
-        outputBuffer[i] = pubKey->W[64 - i];
-    }
-    if ((pubKey->W[32] & 1) != 0) {
-        outputBuffer[31] |= 0x80;
-    }
-}
-
 bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
     int packageIndex = G_io_apdu_buffer[OFFSET_PCK_INDEX];
     int packageCount = G_io_apdu_buffer[OFFSET_PCK_COUNT];
@@ -160,6 +152,15 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
     return packageIndex == packageCount;
 }
 
+void extractPubKey(unsigned char *outputBuffer, cx_ecfp_public_key_t *pubKey) {
+    for (int i = 0; i < 32; i++) {
+        outputBuffer[i] = pubKey->W[64 - i];
+    }
+    if ((pubKey->W[32] & 1) != 0) {
+        outputBuffer[31] |= 0x80;
+    }
+}
+
 void extract_public_key() {
     cx_ecfp_public_key_t publicKey;
     cx_ecfp_private_key_t privateKey;
@@ -177,6 +178,33 @@ void extract_public_key() {
     memset(privateKeyData, 0, 32);
 
     extractPubKey(public_key, &publicKey);
+}
+
+void sign_vote(volatile uint32_t *tx) {
+    // Generate keys
+    cx_ecfp_public_key_t publicKey;
+    cx_ecfp_private_key_t privateKey;
+    uint8_t privateKeyData[32];
+
+    unsigned int length = 0;
+
+    os_perso_derive_node_bip32(
+        CX_CURVE_Ed25519,
+        bip32_path, bip32_depth,
+        privateKeyData, NULL);
+
+    keys_ed25519(&publicKey, &privateKey, privateKeyData);
+    memset(privateKeyData, 0, 32);
+
+    sign_ed25519(
+        vote_get_buffer(),
+        vote_get_buffer_length(),
+        G_io_apdu_buffer,
+        IO_APDU_BUFFER_SIZE,
+        &length,
+        &privateKey);
+
+    *tx += length;
 }
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
@@ -210,6 +238,9 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_PUBLIC_KEY_ED25519: {
+                    // TODO: Public key should be cached / first time is for initialization
+                    // TODO: add initialization support to Rust. Reject unless public key has been requested
+
                     if (!extractBip32(&bip32_depth, bip32_path, rx, OFFSET_DATA)) {
                         THROW(APDU_CODE_DATA_INVALID);
                     }
@@ -223,6 +254,8 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_SIGN_ED25519: {
+                    // TODO: Reject until the public key has been initialized
+
                     if (!process_chunk(tx, rx, true)) {
                         THROW(APDU_CODE_OK);
                     }
@@ -311,33 +344,6 @@ void accept_vote_state(int8_t msg_round, int64_t height) {
     set_code(G_io_apdu_buffer, 0, APDU_CODE_OK);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
     view_display_vote_processing();
-}
-
-void sign_vote(volatile uint32_t *tx) {
-    // Generate keys
-    cx_ecfp_public_key_t publicKey;
-    cx_ecfp_private_key_t privateKey;
-    uint8_t privateKeyData[32];
-
-    unsigned int length = 0;
-
-    os_perso_derive_node_bip32(
-            CX_CURVE_Ed25519,
-            bip32_path, bip32_depth,
-            privateKeyData, NULL);
-
-    keys_ed25519(&publicKey, &privateKey, privateKeyData);
-    memset(privateKeyData, 0, 32);
-
-    sign_ed25519(
-            vote_get_buffer(),
-            vote_get_buffer_length(),
-            G_io_apdu_buffer,
-            IO_APDU_BUFFER_SIZE,
-            &length,
-            &privateKey);
-
-    *tx += length;
 }
 
 #pragma clang diagnostic push
