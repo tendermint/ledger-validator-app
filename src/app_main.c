@@ -36,8 +36,8 @@ const uint8_t privateKeyDataTest[] = {
 };
 #endif
 
-uint8_t bip32_depth;
-uint32_t bip32_path[10];
+// uint8_t bip32_depth;
+// uint32_t bip32_path[10];
 unsigned char public_key[32];
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
@@ -121,6 +121,7 @@ bool extractBip32(uint8_t *depth, uint32_t path[10], uint32_t rx, uint32_t offse
     if (rx < req_offset || *depth > 10) {
         return 0;
     }
+
     memcpy(path, G_io_apdu_buffer + offset + 1, *depth * 4);
     return 1;
 }
@@ -161,7 +162,7 @@ void extractPubKey(unsigned char *outputBuffer, cx_ecfp_public_key_t *pubKey) {
     }
 }
 
-void extract_public_key() {
+void extract_public_key(uint8_t bip32_depth, uint32_t bip32_path[10]) {
     cx_ecfp_public_key_t publicKey;
     cx_ecfp_private_key_t privateKey;
     uint8_t privateKeyData[32];
@@ -190,7 +191,8 @@ void sign_vote(volatile uint32_t *tx) {
 
     os_perso_derive_node_bip32(
         CX_CURVE_Ed25519,
-        bip32_path, bip32_depth,
+        bip32_path,
+        bip32_depth,
         privateKeyData, NULL);
 
     keys_ed25519(&publicKey, &privateKey, privateKeyData);
@@ -240,12 +242,16 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 case INS_PUBLIC_KEY_ED25519: {
                     // TODO: Public key should be cached / first time is for initialization
                     // TODO: add initialization support to Rust. Reject unless public key has been requested
+                    // TODO: Once initialized, do not do it again
+
+                    uint8_t bip32_depth;
+                    uint32_t bip32_path[10];
 
                     if (!extractBip32(&bip32_depth, bip32_path, rx, OFFSET_DATA)) {
                         THROW(APDU_CODE_DATA_INVALID);
                     }
 
-                    extract_public_key();
+                    extract_public_key(bip32_depth, bip32_path);
 
                     os_memmove(G_io_apdu_buffer, public_key, sizeof(public_key));
                     *tx += sizeof(public_key);
