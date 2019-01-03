@@ -43,9 +43,7 @@ enum UI_DISPLAY_MODE scrolling_mode;
 
 volatile char view_data_height[MAX_SCREEN_LINE_WIDTH];
 volatile char view_data_round[MAX_SCREEN_LINE_WIDTH];
-
-volatile char view_data_type[MAX_SCREEN_LINE_WIDTH];
-volatile char view_data_state[MAX_SCREEN_LINE_WIDTH];
+volatile char view_data_type_round[MAX_SCREEN_LINE_WIDTH];
 volatile char view_data_public_key[MAX_SCREEN_LINE_WIDTH];
 
 vote_t data_vote;
@@ -102,8 +100,8 @@ static const bagl_element_t bagl_ui_validating_transaction[] = {
         // Type
         // "Height:Round"
         // "PK"      [PK]
-        UI_LabelLine(1, 0, 8, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_type),
-        UI_LabelLine(1, 0, 19, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_state),
+        UI_LabelLine(1, 0, 8, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_height),
+        UI_LabelLine(1, 0, 19, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_type_round),
         UI_LabelLine(1, 0, 30, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_public_key),
 };
 
@@ -183,24 +181,20 @@ void view_display_vote_processing() {
 void view_set_state(vote_state_t *s, uint8_t public_key[32]) {
     switch (s->vote.Type){
         case TYPE_PREVOTE:
-            strcpy((char *) view_data_type, "Prevote");
+            snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "Prevote   :R%03d", s->vote.Round);
             break;
         case TYPE_PRECOMMIT:
-            strcpy((char *) view_data_type, "Precommit");
+            snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "Precommit :R%03d", s->vote.Round);
             break;
         case TYPE_PROPOSAL:
-            strcpy((char *) view_data_type, "Proposal");
+            snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "Proposal  :R%03d", s->vote.Round);
             break;
         default:
-            strcpy((char *) view_data_type, "Unknown");
+            snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "Unknown   :R%03d", s->vote.Round);
             break;
     }
 
-    ////////////////
-
-    char int64str[] = "-9223372036854775808";
-    int64_to_str(int64str, sizeof(int64str), s->vote.Height);
-    snprintf((char *) view_data_state, MAX_SCREEN_LINE_WIDTH, "%s:%03d", int64str, s->vote.Round);
+    int64_to_str((char *) view_data_height, MAX_SCREEN_LINE_WIDTH, s->vote.Height);
 
     ////////////////
     array_to_hexstr((char *) view_data_public_key, public_key, 4);
@@ -214,8 +208,6 @@ void view_set_msg(vote_t *v) {
     data_vote.Height = v->Height;
     data_vote.Round = v->Round;
 
-    char int64str[] = "-9223372036854775808";
-    int64_to_str(int64str, sizeof(int64str), data_vote.Height);
-    snprintf((char *) view_data_height, MAX_SCREEN_LINE_WIDTH, "Height: %s", int64str);
+    int64_to_str((char *) view_data_height, MAX_SCREEN_LINE_WIDTH, data_vote.Height);
     snprintf((char *) view_data_round, MAX_SCREEN_LINE_WIDTH, "Round: %03d", data_vote.Round);
 }
