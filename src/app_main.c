@@ -20,25 +20,15 @@
 #include "lib/vote_buffer.h"
 #include "lib/vote_fsm.h"
 #include "signature.h"
+#include "zxmacros.h"
 
 #include <os_io_seproxyhal.h>
 #include <os.h>
 #include <string.h>
 
-#ifdef TESTING_ENABLED
-// Generate using always the same private data
-// to allow for reproducible results
-const uint8_t privateKeyDataTest[] = {
-        0x75, 0x56, 0x0e, 0x4d, 0xde, 0xa0, 0x63, 0x05,
-        0xc3, 0x6e, 0x2e, 0xb5, 0xf7, 0x2a, 0xca, 0x71,
-        0x2d, 0x13, 0x4c, 0xc2, 0xa0, 0x59, 0xbf, 0xe8,
-        0x7e, 0x9b, 0x5d, 0x55, 0xbf, 0x81, 0x3b, 0xd4
-};
-#endif
-
-// uint8_t bip32_depth;
-// uint32_t bip32_path[10];
 unsigned char public_key[32];
+cx_ecfp_private_key_t cx_privateKey;
+uint8_t keys_initialized = 0;
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
@@ -93,8 +83,7 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
                 return 0; // nothing received from the master so far (it's a tx
                 // transaction)
             } else {
-                return io_seproxyhal_spi_recv(G_io_apdu_buffer,
-                                              sizeof(G_io_apdu_buffer), 0);
+                return io_seproxyhal_spi_recv(G_io_apdu_buffer, sizeof(G_io_apdu_buffer), 0);
             }
 
         default:
@@ -126,7 +115,7 @@ bool extractBip32(uint8_t *depth, uint32_t path[10], uint32_t rx, uint32_t offse
     return 1;
 }
 
-bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
+bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
     int packageIndex = G_io_apdu_buffer[OFFSET_PCK_INDEX];
     int packageCount = G_io_apdu_buffer[OFFSET_PCK_COUNT];
 
@@ -138,12 +127,6 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
     if (packageIndex == 1) {
         vote_initialize();
         vote_reset();
-        if (getBip32) {
-            if (!extractBip32(&bip32_depth, bip32_path, rx, OFFSET_DATA)) {
-                THROW(APDU_CODE_DATA_INVALID);
-            }
-            return packageIndex == packageCount;
-        }
     }
 
     if (vote_append(&(G_io_apdu_buffer[offset]), rx - offset) != rx) {
@@ -153,58 +136,42 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx, bool getBip32) {
     return packageIndex == packageCount;
 }
 
-void extractPubKey(unsigned char *outputBuffer, cx_ecfp_public_key_t *pubKey) {
+void format_pubkey(unsigned char *outputBuffer, cx_ecfp_public_key_t *pubKey) {
     for (int i = 0; i < 32; i++) {
         outputBuffer[i] = pubKey->W[64 - i];
     }
+
     if ((pubKey->W[32] & 1) != 0) {
         outputBuffer[31] |= 0x80;
     }
 }
 
-void extract_public_key(uint8_t bip32_depth, uint32_t bip32_path[10]) {
-    cx_ecfp_public_key_t publicKey;
-    cx_ecfp_private_key_t privateKey;
+void extract_keys(uint8_t bip32_depth, uint32_t bip32_path[10]) {
+    cx_ecfp_public_key_t cx_publicKey;
     uint8_t privateKeyData[32];
 
     // Generate keys
-    os_perso_derive_node_bip32(
-            CX_CURVE_Ed25519,
-            bip32_path,
-            bip32_depth,
-            privateKeyData,
-            NULL);
+    os_perso_derive_node_bip32(CX_CURVE_Ed25519,
+                               bip32_path,
+                               bip32_depth,
+                               privateKeyData, NULL);
 
-    keys_ed25519(&publicKey, &privateKey, privateKeyData);
+    keys_ed25519(&cx_publicKey, &cx_privateKey, privateKeyData);
     memset(privateKeyData, 0, 32);
 
-    extractPubKey(public_key, &publicKey);
+    format_pubkey(public_key, &cx_publicKey);
+    keys_initialized = 1;
 }
 
 void sign_vote(volatile uint32_t *tx) {
-    // Generate keys
-    cx_ecfp_public_key_t publicKey;
-    cx_ecfp_private_key_t privateKey;
-    uint8_t privateKeyData[32];
-
     unsigned int length = 0;
 
-    os_perso_derive_node_bip32(
-        CX_CURVE_Ed25519,
-        bip32_path,
-        bip32_depth,
-        privateKeyData, NULL);
-
-    keys_ed25519(&publicKey, &privateKey, privateKeyData);
-    memset(privateKeyData, 0, 32);
-
-    sign_ed25519(
-        vote_get_buffer(),
-        vote_get_buffer_length(),
-        G_io_apdu_buffer,
-        IO_APDU_BUFFER_SIZE,
-        &length,
-        &privateKey);
+    sign_ed25519(vote_get_buffer(),
+                 vote_get_buffer_length(),
+                 G_io_apdu_buffer,
+                 IO_APDU_BUFFER_SIZE,
+                 &length,
+                 &cx_privateKey);
 
     *tx += length;
 }
@@ -240,10 +207,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_PUBLIC_KEY_ED25519: {
-                    // TODO: Public key should be cached / first time is for initialization
-                    // TODO: add initialization support to Rust. Reject unless public key has been requested
-                    // TODO: Once initialized, do not do it again
-
                     uint8_t bip32_depth;
                     uint32_t bip32_path[10];
 
@@ -251,7 +214,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                         THROW(APDU_CODE_DATA_INVALID);
                     }
 
-                    extract_public_key(bip32_depth, bip32_path);
+                    extract_keys(bip32_depth, bip32_path);
 
                     os_memmove(G_io_apdu_buffer, public_key, sizeof(public_key));
                     *tx += sizeof(public_key);
@@ -260,9 +223,11 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_SIGN_ED25519: {
-                    // TODO: Reject until the public key has been initialized
+                    if (!keys_initialized) {
+                        THROW(APDU_CODE_COMMAND_NOT_ALLOWED);
+                    }
 
-                    if (!process_chunk(tx, rx, true)) {
+                    if (!process_chunk(tx, rx)) {
                         THROW(APDU_CODE_OK);
                     }
 
@@ -293,8 +258,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     // Check with vote FSM if vote can be signed
                     if (try_state_transition(vote)) {
                         view_set_state(vote->Round, vote->Height);
-
-                        // TODO: This is probably incorrect, it should sign the whole vote
                         sign_vote(tx);
                         THROW(APDU_CODE_OK);
                     }
@@ -344,8 +307,10 @@ void accept_vote_state(int8_t msg_round, int64_t height) {
     vote_state_get()->vote.Round = msg_round;
     vote_state_get()->isInitialized = 1;
 
-    // TODO: Show the correct public key
-    view_set_public_key("050b52687662f8ba73ed3f618a4d91c0d19d4a9ca5b966aa71f9523bc7d21f04");
+    // Show current public key
+    char tmp[80];
+    array_to_hexstr(tmp, public_key, 32);
+    view_set_public_key(tmp);
 
     set_code(G_io_apdu_buffer, 0, APDU_CODE_OK);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
