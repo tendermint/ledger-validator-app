@@ -26,7 +26,6 @@ extern "C" {
 #define TYPE_PRECOMMIT      0x02
 #define TYPE_PROPOSAL       0x20
 
-
 typedef struct {
     uint8_t Type;
     int64_t Height;
@@ -37,8 +36,6 @@ typedef struct {
   int8_t isInitialized;
   vote_t vote;
 } vote_state_t;
-
-void vote_state_reset();
 
 vote_state_t *vote_state_get();
 

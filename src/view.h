@@ -55,13 +55,11 @@ void view_init();
 /// view_mainmenu
 void view_display_main_menu();
 
-void view_set_state(int8_t msg_round, int64_t msg_height);
+void view_set_state(int8_t msg_round, int64_t msg_height, uint8_t publicKey[32]);
 
 void view_set_msg_height(int64_t height);
 
 void view_set_msg_round(int8_t msg_round);
-
-void view_set_public_key(const char *publicKey);
 
 void view_display_vote_init();
 

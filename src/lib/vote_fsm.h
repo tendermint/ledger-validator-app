@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-uint8_t try_state_transition(vote_t *vote);
+uint8_t try_state_transition();
 
 #ifdef __cplusplus
 }

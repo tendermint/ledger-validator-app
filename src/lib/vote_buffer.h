@@ -24,6 +24,9 @@ void vote_initialize();
 /// Clears the vote buffer
 void vote_reset();
 
+/// Clears the vote buffer
+void vote_state_reset();
+
 /// Appends buffer to the end of the current transaction buffer
 /// Transaction buffer will grow until it reaches the maximum allowed size
 /// \param buffer

@@ -36,10 +36,6 @@ int sign_ed25519(const uint8_t *message,
     uint8_t message_digest[CX_SHA512_SIZE];
     cx_hash_sha512(message, message_length, message_digest, CX_SHA512_SIZE);
 
-    cx_ecfp_public_key_t publicKey;
-    cx_ecfp_init_public_key(CX_CURVE_Ed25519, NULL, 0, &publicKey);
-    cx_ecfp_generate_pair(CX_CURVE_Ed25519, &publicKey, privateKey, 1);
-
     unsigned int info = 0;
 
     *signature_length = cx_eddsa_sign(privateKey,

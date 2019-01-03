@@ -44,7 +44,7 @@ enum UI_DISPLAY_MODE scrolling_mode;
 volatile char view_data_height[MAX_SCREEN_LINE_WIDTH];
 volatile char view_data_round[MAX_SCREEN_LINE_WIDTH];
 volatile char view_data_state[MAX_SCREEN_LINE_WIDTH];
-volatile char view_data_publicKey[MAX_SCREEN_LINE_WIDTH];
+volatile char view_data_public_key[MAX_SCREEN_LINE_WIDTH];
 
 int8_t data_msg_round;
 int64_t data_msg_height;
@@ -104,7 +104,7 @@ static const bagl_element_t bagl_ui_validating_transaction[] = {
         // "Height:" [value]
         // "PK"      [PK]
         UI_LabelLine(1, 0, 19, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_state),
-        UI_LabelLineScrolling(1, 0, 30, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_publicKey),
+        UI_LabelLine(1, 0, 30, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_public_key),
 };
 
 static unsigned int bagl_ui_initialize_transaction_button(
@@ -165,41 +165,40 @@ void view_display_main_menu() {
 }
 
 const bagl_element_t *ui_vote_processing_prepro(const bagl_element_t *element) {
-
     UX_CALLBACK_SET_INTERVAL(50);
     return element;
 }
 
 void view_display_vote_init() {
-
     view_uiState = UI_VOTE_INIT;
     UX_DISPLAY(bagl_ui_initialize_transaction, NULL);
 }
 
 void view_display_vote_processing() {
-
     view_uiState = UI_VOTE_PROCESSING;
     UX_DISPLAY(bagl_ui_validating_transaction, ui_vote_processing_prepro);
 }
 
-void view_set_state(int8_t msg_round, int64_t msg_height) {
+void view_set_state(int8_t msg_round, int64_t msg_height, uint8_t public_key[32]) {
     char int64str[] = "-9223372036854775808";
     int64_to_str(int64str, sizeof(int64str), msg_height);
-    snprintf((char *) view_data_state, MAX_SCREEN_LINE_WIDTH, "%s-%03d\n", int64str, msg_round);
+    snprintf((char *) view_data_state, MAX_SCREEN_LINE_WIDTH, "%s:%03d", int64str, msg_round);
+
+    //
+    array_to_hexstr((char *) view_data_public_key, public_key, 4);
+    view_data_public_key[8] = '.';
+    view_data_public_key[9] = '.';
+    array_to_hexstr((char *) view_data_public_key + 10, public_key + 28, 4);
 }
 
 void view_set_msg_height(int64_t height) {
     char int64str[] = "-9223372036854775808";
     int64_to_str(int64str, sizeof(int64str), height);
     data_msg_height = height;
-    snprintf((char *) view_data_height, MAX_SCREEN_LINE_WIDTH, "Height: %s\n", int64str);
+    snprintf((char *) view_data_height, MAX_SCREEN_LINE_WIDTH, "Height: %s", int64str);
 }
 
 void view_set_msg_round(int8_t msg_round) {
     data_msg_round = msg_round;
-    snprintf((char *) view_data_round, MAX_SCREEN_LINE_WIDTH, "Round: %03d\n", data_msg_round);
-}
-
-void view_set_public_key(const char *publicKey) {
-    snprintf((char *) view_data_publicKey, MAX_SCREEN_LINE_WIDTH, "PK: %s\n", publicKey);
+    snprintf((char *) view_data_round, MAX_SCREEN_LINE_WIDTH, "Round: %03d", data_msg_round);
 }

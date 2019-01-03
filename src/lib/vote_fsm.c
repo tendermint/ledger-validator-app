@@ -32,25 +32,29 @@ uint8_t validate_state_transition(vote_t *v, vote_state_t *vote_state) {
         return 1;
     }
 
-    // If exactly same height/round, then need to be in sequence
+    // If exactly same height/round, then need to be in type sequence (TYPE_PROPOSAL, TYPE_PREVOTE, TYPE_PRECOMMIT)
     if (v->Height == s->Height && v->Round == s->Round) {
         switch (v->Type) {
             case TYPE_PREVOTE: {
-                return s->Type == TYPE_PROPOSAL;
+                return (uint8_t) (s->Type == TYPE_PROPOSAL);
             }
 
             case TYPE_PRECOMMIT: {
-                return s->Type != TYPE_PRECOMMIT;
+                return (uint8_t) (s->Type != TYPE_PRECOMMIT);
+            }
+            default:{
+                break;
             }
         }
 
         return 0;
     }
 
-    return 1;
+    return 0;
 }
 
-uint8_t try_state_transition(vote_t *vote) {
+uint8_t try_state_transition() {
+    vote_t *vote = vote_get();
     vote_state_t *vote_state = vote_state_get();
 
     if (!validate_state_transition(vote, vote_state)) {
