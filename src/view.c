@@ -43,6 +43,8 @@ enum UI_DISPLAY_MODE scrolling_mode;
 
 volatile char view_data_height[MAX_SCREEN_LINE_WIDTH];
 volatile char view_data_round[MAX_SCREEN_LINE_WIDTH];
+
+volatile char view_data_type[MAX_SCREEN_LINE_WIDTH];
 volatile char view_data_state[MAX_SCREEN_LINE_WIDTH];
 volatile char view_data_public_key[MAX_SCREEN_LINE_WIDTH];
 
@@ -98,11 +100,10 @@ static const bagl_element_t bagl_ui_initialize_transaction[] = {
 
 static const bagl_element_t bagl_ui_validating_transaction[] = {
         UI_FillRectangle(0, 0, 0, 128, 32, 0x000000, 0xFFFFFF),
-        UI_LabelLine(1, 0, 8, 128, 11, 0xFFFFFF, 0x000000, "Validating"),
-
-        // 4 labels..
-        // "Height:" [value]
+        // Type
+        // "Height:Round"
         // "PK"      [PK]
+        UI_LabelLine(1, 0, 8, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_type),
         UI_LabelLine(1, 0, 19, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_state),
         UI_LabelLine(1, 0, 30, 128, 11, 0xFFFFFF, 0x000000, (const char *) view_data_public_key),
 };
@@ -179,12 +180,29 @@ void view_display_vote_processing() {
     UX_DISPLAY(bagl_ui_validating_transaction, ui_vote_processing_prepro);
 }
 
-void view_set_state(int8_t msg_round, int64_t msg_height, uint8_t public_key[32]) {
-    char int64str[] = "-9223372036854775808";
-    int64_to_str(int64str, sizeof(int64str), msg_height);
-    snprintf((char *) view_data_state, MAX_SCREEN_LINE_WIDTH, "%s:%03d", int64str, msg_round);
+void view_set_state(vote_state_t *s, uint8_t public_key[32]) {
+    switch (s->vote.Type){
+        case TYPE_PREVOTE:
+            strcpy((char *) view_data_type, "Prevote");
+            break;
+        case TYPE_PRECOMMIT:
+            strcpy((char *) view_data_type, "Precommit");
+            break;
+        case TYPE_PROPOSAL:
+            strcpy((char *) view_data_type, "Proposal");
+            break;
+        default:
+            strcpy((char *) view_data_type, "???????");
+            break;
+    }
 
-    //
+    ////////////////
+
+    char int64str[] = "-9223372036854775808";
+    int64_to_str(int64str, sizeof(int64str), s->vote.Height);
+    snprintf((char *) view_data_state, MAX_SCREEN_LINE_WIDTH, "%s:%03d", int64str, s->vote.Round);
+
+    ////////////////
     array_to_hexstr((char *) view_data_public_key, public_key, 4);
     view_data_public_key[8] = '.';
     view_data_public_key[9] = '.';

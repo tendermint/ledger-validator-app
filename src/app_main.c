@@ -269,12 +269,12 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     }
 
                     // Check with vote FSM if vote can be signed
-//                    if (!try_state_transition()) {
-//                        THROW(APDU_CODE_DATA_INVALID);
-//                    }
+                    if (!try_state_transition()) {
+                        THROW(APDU_CODE_DATA_INVALID);
+                    }
 
                     sign_vote(tx);
-                    view_set_state(vote->Round, vote->Height, public_key);
+                    view_set_state(vote_state, public_key);
 
                     THROW(APDU_CODE_OK);
 
@@ -318,9 +318,13 @@ void reject_vote_state() {
 }
 
 void accept_vote_state(int8_t msg_round, int64_t msg_height) {
-    vote_state_get()->vote.Height = msg_height;
-    vote_state_get()->vote.Round = msg_round;
-    vote_state_get()->isInitialized = 1;
+    vote_state_t *s = vote_state_get();
+
+    s->vote.Height = msg_height;
+    s->vote.Round = msg_round;
+    s->isInitialized = 1;
+
+    view_set_state(s, public_key);
 
     set_code(G_io_apdu_buffer, 0, APDU_CODE_OK);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);

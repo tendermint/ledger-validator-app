@@ -18,6 +18,8 @@
 
 #include "os.h"
 #include "cx.h"
+#include "vote.h"
+
 
 #define MAX_CHARS_PER_KEY_LINE      64
 #define MAX_CHARS_PER_VALUE_LINE    128
@@ -55,7 +57,7 @@ void view_init();
 /// view_mainmenu
 void view_display_main_menu();
 
-void view_set_state(int8_t msg_round, int64_t msg_height, uint8_t publicKey[32]);
+void view_set_state(vote_state_t *s, uint8_t public_key[32]);
 
 void view_set_msg_height(int64_t height);
 
