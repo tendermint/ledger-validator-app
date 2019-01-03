@@ -261,8 +261,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 
                     if (!vote_state->isInitialized) {
                         // Show values and ask user before setting state
-                        view_set_msg_round(vote->Round);
-                        view_set_msg_height(vote->Height);
+                        view_set_msg(vote);
                         view_display_vote_init();
                         *flags |= IO_ASYNCH_REPLY;
                         THROW(APDU_CODE_DATA_INVALID);
@@ -317,11 +316,12 @@ void reject_vote_state() {
     view_display_main_menu();
 }
 
-void accept_vote_state(int8_t msg_round, int64_t msg_height) {
+void accept_vote_state(vote_t *v) {
     vote_state_t *s = vote_state_get();
 
-    s->vote.Height = msg_height;
-    s->vote.Round = msg_round;
+    s->vote.Type = v->Type;
+    s->vote.Height = v->Height;
+    s->vote.Round = v->Round;
     s->isInitialized = 1;
 
     view_set_state(s, public_key);

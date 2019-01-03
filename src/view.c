@@ -48,8 +48,7 @@ volatile char view_data_type[MAX_SCREEN_LINE_WIDTH];
 volatile char view_data_state[MAX_SCREEN_LINE_WIDTH];
 volatile char view_data_public_key[MAX_SCREEN_LINE_WIDTH];
 
-int8_t data_msg_round;
-int64_t data_msg_height;
+vote_t data_vote;
 
 //------ Event handlers
 delegate_accept_vote_state_signature eh_accept = NULL;
@@ -125,7 +124,7 @@ static unsigned int bagl_ui_initialize_transaction_button(
             // Press right to progress to the next element
         case BUTTON_EVT_RELEASED | BUTTON_RIGHT: {
             if (eh_accept != NULL) {
-                eh_accept(data_msg_round, data_msg_height);
+                eh_accept(&data_vote);
             }
             break;
         }
@@ -138,15 +137,16 @@ static unsigned int bagl_ui_validating_transaction_button(
         unsigned int button_mask_counter) {
 
     switch (button_mask) {
-        // We dont allow people to exit this mode
-//        // Press both left and right to switch to value scrolling
-//        case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT: {
-//            if (eh_vote_reset != NULL) {
-//                eh_vote_reset();
-//            }
-//            view_display_main_menu();
-//            break;
-//        }
+        // We dont allow people to exit this mode. ONLY TEST MODE
+#ifdef TESTING_ENABLED
+        case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT: {
+            if (eh_vote_reset != NULL) {
+                eh_vote_reset();
+            }
+            view_display_main_menu();
+            break;
+        }
+#endif
     }
     return 0;
 }
@@ -192,7 +192,7 @@ void view_set_state(vote_state_t *s, uint8_t public_key[32]) {
             strcpy((char *) view_data_type, "Proposal");
             break;
         default:
-            strcpy((char *) view_data_type, "???????");
+            strcpy((char *) view_data_type, "Unknown");
             break;
     }
 
@@ -209,14 +209,13 @@ void view_set_state(vote_state_t *s, uint8_t public_key[32]) {
     array_to_hexstr((char *) view_data_public_key + 10, public_key + 28, 4);
 }
 
-void view_set_msg_height(int64_t height) {
-    char int64str[] = "-9223372036854775808";
-    int64_to_str(int64str, sizeof(int64str), height);
-    data_msg_height = height;
-    snprintf((char *) view_data_height, MAX_SCREEN_LINE_WIDTH, "Height: %s", int64str);
-}
+void view_set_msg(vote_t *v) {
+    data_vote.Type = v->Type;
+    data_vote.Height = v->Height;
+    data_vote.Round = v->Round;
 
-void view_set_msg_round(int8_t msg_round) {
-    data_msg_round = msg_round;
-    snprintf((char *) view_data_round, MAX_SCREEN_LINE_WIDTH, "Round: %03d", data_msg_round);
+    char int64str[] = "-9223372036854775808";
+    int64_to_str(int64str, sizeof(int64str), data_vote.Height);
+    snprintf((char *) view_data_height, MAX_SCREEN_LINE_WIDTH, "Height: %s", int64str);
+    snprintf((char *) view_data_round, MAX_SCREEN_LINE_WIDTH, "Round: %03d", data_vote.Round);
 }

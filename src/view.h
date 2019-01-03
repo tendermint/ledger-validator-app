@@ -34,7 +34,7 @@ enum UI_STATE {
 extern enum UI_STATE view_uiState;
 
 //------ Delegates definitions
-typedef void (*delegate_accept_vote_state_signature)(int8_t msg_round, int64_t height);
+typedef void (*delegate_accept_vote_state_signature)(vote_t *vote);
 
 typedef void (*delegate_reject_vote_state_signature)();
 
@@ -59,9 +59,7 @@ void view_display_main_menu();
 
 void view_set_state(vote_state_t *s, uint8_t public_key[32]);
 
-void view_set_msg_height(int64_t height);
-
-void view_set_msg_round(int8_t msg_round);
+void view_set_msg(vote_t *v);
 
 void view_display_vote_init();
 
