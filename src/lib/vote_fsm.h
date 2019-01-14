@@ -15,13 +15,13 @@
 ********************************************************************************/
 #pragma once
 
-#include "vote_buffer.h"
+#include "vote.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-uint8_t try_state_transition();
+uint8_t try_state_transition(vote_t *vote, vote_state_t *vote_state);
 
 #ifdef __cplusplus
 }
