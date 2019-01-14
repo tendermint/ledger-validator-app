@@ -181,16 +181,32 @@ void view_display_vote_processing() {
 void view_set_state(vote_state_t *s, uint8_t public_key[32]) {
     switch (s->vote.Type){
         case TYPE_PREVOTE:
+#ifdef TESTING_ENABLED
+            snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "TEST Prevote   :R%03d", s->vote.Round);
+#else
             snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "Prevote   :R%03d", s->vote.Round);
+#endif
             break;
         case TYPE_PRECOMMIT:
+#ifdef TESTING_ENABLED
+            snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "TEST Precommit :R%03d", s->vote.Round);
+#else
             snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "Precommit :R%03d", s->vote.Round);
+#endif
             break;
         case TYPE_PROPOSAL:
+#ifdef TESTING_ENABLED
+            snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "TEST Proposal  :R%03d", s->vote.Round);
+#else
             snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "Proposal  :R%03d", s->vote.Round);
+#endif
             break;
         default:
+#ifdef TESTING_ENABLED
+            snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "TEST Unknown   :R%03d", s->vote.Round);
+#else
             snprintf((char *) view_data_type_round, MAX_SCREEN_LINE_WIDTH, "Unknown   :R%03d", s->vote.Round);
+#endif
             break;
     }
 
