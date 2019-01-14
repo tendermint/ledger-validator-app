@@ -17,7 +17,7 @@
 
 #include "app_main.h"
 #include "view.h"
-#include "lib/vote_buffer.h"
+#include "lib/vote_parser.h"
 #include "lib/vote_fsm.h"
 #include "signature.h"
 
@@ -28,6 +28,11 @@
 unsigned char public_key[32];
 cx_ecfp_private_key_t cx_privateKey;
 uint8_t keys_initialized = 0;
+
+cx_sha512_t vote_hash_context;
+uint8_t vote_digest[CX_SHA512_SIZE];
+vote_t vote;
+vote_state_t vote_state;
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
@@ -123,14 +128,26 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
         THROW(APDU_CODE_DATA_INVALID);
     }
 
+    uint8_t *p = G_io_apdu_buffer + offset;
+    uint16_t len = rx - offset;
+
     if (packageIndex == 1) {
-        vote_initialize();
-        vote_reset();
+        cx_sha512_init(&vote_hash_context);
+
+        // Try parsing first block
+        parse_error_t error_code = vote_amino_parse(p, len, &vote);
+        if (error_code != parse_ok) {
+            G_io_apdu_buffer[*tx] = (uint8_t) error_code;
+            *tx++;
+            THROW(APDU_CODE_DATA_INVALID);
+        }
     }
 
-    if (vote_append(G_io_apdu_buffer + offset, rx - offset) != rx - offset) {
-        THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
-    }
+    // Incrementally hash and/or terminate
+    cx_hash(&vote_hash_context.header,
+            (packageIndex == packageCount) ? CX_LAST : 0,
+            p, len,
+            vote_digest, CX_SHA512_SIZE);
 
     return packageIndex == packageCount;
 }
@@ -163,13 +180,6 @@ void extract_keys(uint8_t bip32_depth, uint32_t bip32_path[10]) {
 }
 
 void sign_vote(volatile uint32_t *tx) {
-    // Prepare digest
-    uint8_t message_digest[CX_SHA512_SIZE];
-    cx_hash_sha512(vote_get_buffer(),
-                   vote_get_buffer_length(),
-                   message_digest,
-                   CX_SHA512_SIZE);
-
     // sign
     uint8_t *signature = G_io_apdu_buffer;
     unsigned int signature_capacity = IO_APDU_BUFFER_SIZE - 2;
@@ -178,7 +188,7 @@ void sign_vote(volatile uint32_t *tx) {
     unsigned int signature_length = cx_eddsa_sign(&cx_privateKey,
                                                   CX_LAST,
                                                   CX_SHA512,
-                                                  message_digest,
+                                                  vote_digest,
                                                   CX_SHA512_SIZE,
                                                   NULL,
                                                   0,
@@ -187,6 +197,10 @@ void sign_vote(volatile uint32_t *tx) {
                                                   &info);
 
     *tx += signature_length;
+}
+
+void vote_state_reset() {
+    vote_state.isInitialized = 0;
 }
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
@@ -244,36 +258,21 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                         THROW(APDU_CODE_OK);
                     }
 
-                    parse_error_t error_code = vote_parse();
-
-                    if (error_code != parse_ok) {
-                        G_io_apdu_buffer[*tx] = (uint8_t) error_code;
-                        *tx++;
-                        THROW(APDU_CODE_DATA_INVALID);
-                    }
-
-                    vote_t *vote = vote_get();
-                    vote_state_t *vote_state = vote_state_get();
-
-                    if (vote == NULL || vote_state == NULL) {
-                        THROW(APDU_CODE_DATA_INVALID);
-                    }
-
-                    if (!vote_state->isInitialized) {
+                    if (!vote_state.isInitialized) {
                         // Show values and ask user before setting state
-                        view_set_msg(vote);
+                        view_set_msg(&vote);
                         view_display_vote_init();
                         *flags |= IO_ASYNCH_REPLY;
                         THROW(APDU_CODE_DATA_INVALID);
                     }
 
                     // Check with vote FSM if vote can be signed
-                    if (!try_state_transition()) {
+                    if (!try_state_transition(&vote, &vote_state)) {
                         THROW(APDU_CODE_DATA_INVALID);
                     }
 
                     sign_vote(tx);
-                    view_set_state(vote_state, public_key);
+                    view_set_state(&vote_state, public_key);
 
                     THROW(APDU_CODE_OK);
 
@@ -317,14 +316,12 @@ void reject_vote_state() {
 }
 
 void accept_vote_state(vote_t *v) {
-    vote_state_t *s = vote_state_get();
+    vote_state.vote.Type = v->Type;
+    vote_state.vote.Height = v->Height;
+    vote_state.vote.Round = v->Round;
+    vote_state.isInitialized = 1;
 
-    s->vote.Type = v->Type;
-    s->vote.Height = v->Height;
-    s->vote.Round = v->Round;
-    s->isInitialized = 1;
-
-    view_set_state(s, public_key);
+    view_set_state(&vote_state, public_key);
 
     set_code(G_io_apdu_buffer, 0, APDU_CODE_OK);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);

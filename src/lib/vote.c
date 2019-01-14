@@ -15,14 +15,3 @@
 ********************************************************************************/
 
 #include "vote.h"
-
-vote_state_t vote_state;
-vote_t vote;
-
-vote_state_t *vote_state_get() {
-    return &vote_state;
-}
-
-vote_t *vote_get() {
-    return &vote;
-}
