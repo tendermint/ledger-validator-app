@@ -30,7 +30,7 @@ include $(BOLOS_SDK)/Makefile.defines
 
 APPNAME = "COSMOS-VAL"
 APPVERSION_M=0
-APPVERSION_N=3
+APPVERSION_N=4
 APPVERSION_P=0
 
 APP_LOAD_PARAMS = --appFlags 0x00 --delete $(COMMON_LOAD_PARAMS) --path "44'/118'"
@@ -59,7 +59,7 @@ DEFINES   += HAVE_BOLOS_APP_STACK_CANARY
 DEFINES   += LEDGER_SPECIFIC
 
 #Feature temporarily disabled
-#DEFINES += TESTING_ENABLED
+DEFINES += TESTING_ENABLED
 
 # Compiler, assembler, and linker
 

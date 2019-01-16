@@ -163,14 +163,6 @@ void extract_keys(uint8_t bip32_depth, uint32_t bip32_path[10]) {
 }
 
 void sign_vote(volatile uint32_t *tx) {
-    // Prepare digest
-    uint8_t message_digest[CX_SHA512_SIZE];
-    cx_hash_sha512(vote_get_buffer(),
-                   vote_get_buffer_length(),
-                   message_digest,
-                   CX_SHA512_SIZE);
-
-    // sign
     uint8_t *signature = G_io_apdu_buffer;
     unsigned int signature_capacity = IO_APDU_BUFFER_SIZE - 2;
     unsigned int info = 0;
@@ -178,8 +170,8 @@ void sign_vote(volatile uint32_t *tx) {
     unsigned int signature_length = cx_eddsa_sign(&cx_privateKey,
                                                   CX_LAST,
                                                   CX_SHA512,
-                                                  message_digest,
-                                                  CX_SHA512_SIZE,
+                                                  vote_get_buffer(),
+                                                  vote_get_buffer_length(),
                                                   NULL,
                                                   0,
                                                   signature,
