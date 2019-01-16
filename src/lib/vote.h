@@ -37,6 +37,10 @@ typedef struct {
   vote_t vote;
 } vote_state_t;
 
+vote_state_t *vote_state_get();
+
+vote_t *vote_get();
+
 #ifdef __cplusplus
 }
 #endif
