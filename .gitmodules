@@ -1,3 +1,0 @@
-[submodule "deps/ledger-zxlib"]
-	path = deps/ledger-zxlib
-	url = https://github.com/ZondaX/ledger-zxlib
