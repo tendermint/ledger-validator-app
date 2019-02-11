@@ -71,9 +71,9 @@ const ux_menu_entry_t menu_about[];
 
 const ux_menu_entry_t menu_main[] = {
 #ifdef TESTING_ENABLED
-        {NULL, NULL, 0, NULL, "Cosmos TEST!", "Validator", 0, 0},
+        {NULL, NULL, 0, NULL, "Tendermint TEST!", "Validator", 0, 0},
 #else
-        {NULL, NULL, 0, &C_icon_dashboard, "Cosmos", "Validator", 0, 0},
+        {NULL, NULL, 0, &C_icon_dashboard, "Tendermint", "Validator", 0, 0},
 #endif
         {menu_about, NULL, 0, NULL, "About", NULL, 0, 0},
         {NULL, os_sched_exit, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29},
