@@ -162,23 +162,21 @@ void extract_keys(uint8_t bip32_depth, uint32_t bip32_path[10]) {
     keys_initialized = 1;
 }
 
-void sign_vote(volatile uint32_t *tx) {
+unsigned int sign_vote() {
     uint8_t *signature = G_io_apdu_buffer;
     unsigned int signature_capacity = IO_APDU_BUFFER_SIZE - 2;
     unsigned int info = 0;
 
-    unsigned int signature_length = cx_eddsa_sign(&cx_privateKey,
-                                                  CX_LAST,
-                                                  CX_SHA512,
-                                                  vote_get_buffer(),
-                                                  vote_get_buffer_length(),
-                                                  NULL,
-                                                  0,
-                                                  signature,
-                                                  signature_capacity,
-                                                  &info);
-
-    *tx += signature_length;
+    return cx_eddsa_sign(&cx_privateKey,
+                         CX_LAST,
+                         CX_SHA512,
+                         vote_get_buffer(),
+                         vote_get_buffer_length(),
+                         NULL,
+                         0,
+                         signature,
+                         signature_capacity,
+                         &info);
 }
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
@@ -256,7 +254,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                         view_set_msg(vote);
                         view_display_vote_init();
                         *flags |= IO_ASYNCH_REPLY;
-                        THROW(APDU_CODE_DATA_INVALID);
+                        break;
                     }
 
                     // Check with vote FSM if vote can be signed
@@ -264,9 +262,8 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                         THROW(APDU_CODE_DATA_INVALID);
                     }
 
-                    sign_vote(tx);
+                    *tx = sign_vote();
                     view_set_state(vote_state, public_key);
-
                     THROW(APDU_CODE_OK);
 
                 }
@@ -318,8 +315,11 @@ void accept_vote_state(vote_t *v) {
 
     view_set_state(s, public_key);
 
-    set_code(G_io_apdu_buffer, 0, APDU_CODE_OK);
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+    unsigned int tx = sign_vote();
+
+    set_code(G_io_apdu_buffer + tx, 0, APDU_CODE_OK);
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx + 2);
+
     view_display_vote_processing();
 }
 
