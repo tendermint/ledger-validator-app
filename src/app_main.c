@@ -1,6 +1,6 @@
 /*******************************************************************************
 *   (c) 2016 Ledger
-*   (c) 2018 ZondaX GmbH
+*   (c) 2018, 2019 ZondaX GmbH
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -24,6 +24,9 @@
 #include <os_io_seproxyhal.h>
 #include <os.h>
 #include <string.h>
+
+const uint8_t bip32_depth = 5;
+uint32_t bip32_path[5];
 
 unsigned char public_key[32];
 cx_ecfp_private_key_t cx_privateKey;
@@ -98,7 +101,7 @@ void app_init() {
     view_display_main_menu();
 }
 
-bool extractBip32(uint8_t *depth, uint32_t path[10], uint32_t rx, uint32_t offset) {
+bool initializeBip32(uint8_t *depth, uint32_t path[10], uint32_t rx, uint32_t offset) {
     if (rx < offset + 1) {
         return 0;
     }
@@ -145,9 +148,15 @@ void format_pubkey(unsigned char *outputBuffer, cx_ecfp_public_key_t *pubKey) {
     }
 }
 
-void extract_keys(uint8_t bip32_depth, uint32_t bip32_path[10]) {
+void extract_keys() {
     cx_ecfp_public_key_t cx_publicKey;
     uint8_t privateKeyData[32];
+
+    bip32_path[0] = 0x80000000 | 44;
+    bip32_path[1] = 0x80000000 | 118;
+    bip32_path[2] = 0x80000000 | 0;
+    bip32_path[3] = 0x00000000 | 0;
+    bip32_path[4] = 0x00000000 | 0;
 
     // Generate keys
     os_perso_derive_node_bip32(CX_CURVE_Ed25519,
@@ -210,15 +219,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_PUBLIC_KEY_ED25519: {
-                    uint8_t bip32_depth;
-                    uint32_t bip32_path[10];
-
-                    if (!extractBip32(&bip32_depth, bip32_path, rx, OFFSET_DATA)) {
-                        THROW(APDU_CODE_DATA_INVALID);
-                    }
-
-                    extract_keys(bip32_depth, bip32_path);
-
                     os_memmove(G_io_apdu_buffer, public_key, sizeof(public_key));
                     *tx += sizeof(public_key);
 
@@ -335,6 +335,7 @@ void app_main() {
     view_set_reject_eh(&reject_vote_state);
 
     keys_initialized = 0;
+    extract_keys();
 
     for (;;) {
         volatile uint16_t sw = 0;

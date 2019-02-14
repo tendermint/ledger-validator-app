@@ -30,8 +30,11 @@ typedef enum {
     parse_unexpected_type_value = 4,
     parse_unexpected_height_value = 5,
     parse_unexpected_round_value = 6,
-    parse_unexpected_buffer_size = 7
+    parse_unexpected_buffer_size = 7,
+    parse_unexpected_varint_len = 8,
 } parse_error_t;
+
+parse_error_t get_varint(const uint8_t *buffer, size_t buf_size, size_t *value, uint32_t start, uint32_t *pos_end);
 
 parse_error_t vote_amino_parse(const uint8_t *buffer, size_t size, vote_t *vote);
 
