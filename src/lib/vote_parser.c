@@ -27,8 +27,8 @@
 #define FIELD_ROUND    3
 #define FIELD_UNKNOWN  4
 
-#define FIELD_NUM(x) ((uint8_t)((x) >> 3))
-#define WIRE_TYPE(x) ((uint8_t)((x) & 0x7))
+#define FIELD_NUM(x) ((uint8_t)((x) >> 3u))
+#define WIRE_TYPE(x) ((uint8_t)((x) & 0x7u))
 
 int64_t decode_amino_64bits(const uint8_t *p) {
     int64_t v = 0;
@@ -38,6 +38,31 @@ int64_t decode_amino_64bits(const uint8_t *p) {
         v += *p;
     }
     return v;
+}
+
+parse_error_t get_varint(const uint8_t *buffer,
+                         size_t buf_size,
+                         size_t *value,
+                         uint32_t pos_start,
+                         uint32_t *pos_end) {
+    size_t shift = 0;
+    *value = 0;
+    *pos_end = pos_start;
+
+    while (*pos_end < buf_size) {
+        uint8_t b = buffer[*pos_end];
+        *value += (b & 0x7Fu) << shift;
+        (*pos_end)++;
+        if (!(b & 0x80u))
+            break;
+        shift += 7;
+    }
+
+    if (*pos_end < buf_size) {
+        return parse_ok;
+    }
+
+    return parse_unexpected_buffer_end;
 }
 
 parse_error_t vote_amino_parse(const uint8_t *buffer, size_t size, vote_t *vote) {
@@ -51,6 +76,16 @@ parse_error_t vote_amino_parse(const uint8_t *buffer, size_t size, vote_t *vote)
 
     if (size < 2) {
         return parse_unexpected_buffer_end;
+    }
+
+    size_t message_length;
+    parse_error_t err = get_varint(buffer, size, &message_length, pos, &pos);
+    if (err != parse_ok) {
+        return err;
+    }
+
+    if (message_length+1 != size) {
+        return parse_unexpected_buffer_size;
     }
 
     while (pos < size) {

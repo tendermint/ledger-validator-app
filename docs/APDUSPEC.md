@@ -6,7 +6,7 @@ The general structure of commands and responses is as follows:
 #### Commands
 
 | Field   | Type     | Content                | Note |
-|:------- |:-------- |:---------------------- | ---- |
+| :------ | :------- | :--------------------- | ---- |
 | CLA     | byte (1) | Application Identifier | 0x55 |
 | INS     | byte (1) | Instruction ID         |      |
 | P1      | byte (1) | Parameter 1            |      |
@@ -74,10 +74,10 @@ The general structure of commands and responses is as follows:
 
 #### Response
 
-| Field   | Type      | Content       | Note                            |
-| ------- | --------- | ------------- | ------------------------------- |
-| PK      | byte (65) | Public Key    |  |
-| SW1-SW2 | byte (2)  | Return code   | see list of return codes        |
+| Field   | Type      | Content     | Note                     |
+| ------- | --------- | ----------- | ------------------------ |
+| PK      | byte (65) | Public Key  |                          |
+| SW1-SW2 | byte (2)  | Return code | see list of return codes |
 
 ### SIGN_ED25519
 
@@ -108,7 +108,7 @@ When starting the app, height and round will not be initialized. The first signa
 
 #### Response
 
-| Field   | Type      | Content       | Note                            |
-| ------- | --------- | ------------- | ------------------------------- |
-| SIG     | byte (64) | Signature     |  |
-| SW1-SW2 | byte (2)  | Return code   | see list of return codes        |
+| Field   | Type      | Content     | Note                     |
+| ------- | --------- | ----------- | ------------------------ |
+| SIG     | byte (64) | Signature   |                          |
+| SW1-SW2 | byte (2)  | Return code | see list of return codes |
