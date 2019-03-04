@@ -118,4 +118,4 @@ dep/%.d: %.c Makefile.genericwallet
 
 
 listvariants:
-	@echo VARIANTS COIN TENDERMINT
+	@echo VARIANTS COIN tendermint
