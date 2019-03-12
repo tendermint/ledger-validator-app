@@ -159,10 +159,15 @@ void extract_keys() {
     bip32_path[4] = 0x00000000 | 0;
 
     // Generate keys
-    os_perso_derive_node_bip32(CX_CURVE_Ed25519,
-                               bip32_path,
-                               bip32_depth,
-                               privateKeyData, NULL);
+    os_perso_derive_node_bip32_seed_key(
+            HDW_NORMAL,
+            CX_CURVE_Ed25519,
+            bip32_path,
+            bip32_depth,
+            privateKeyData,
+            NULL,
+            NULL,
+            0);
 
     keys_ed25519(&cx_publicKey, &cx_privateKey, privateKeyData);
     memset(privateKeyData, 0, 32);
