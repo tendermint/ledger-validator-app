@@ -1,4 +1,4 @@
-# Cosmos Validator App - Ledger Nano S
+# Tendermint Validator App - Ledger Nano S
 ## General structure
 
 The general structure of commands and responses is as follows:
@@ -7,12 +7,12 @@ The general structure of commands and responses is as follows:
 
 | Field   | Type     | Content                | Note |
 | :------ | :------- | :--------------------- | ---- |
-| CLA     | byte (1) | Application Identifier | 0x55 |
-| INS     | byte (1) | Instruction ID         |      |
-| P1      | byte (1) | Parameter 1            |      |
-| P2      | byte (1) | Parameter 2            |      |
-| L       | byte (1) | Bytes in payload       |      |
-| PAYLOAD | byte (L) | Payload                |      |
+| CLA     | byte (1) | Application Identifier | 0x56 |
+| INS     | byte (1) | Instruction ID         |  x   |
+| P1      | byte (1) | Parameter 1            |  x   |
+| P2      | byte (1) | Parameter 2            |  x   |
+| L       | byte (1) | Bytes in payload       |  x   |
+| PAYLOAD | byte (L) | Payload                |  x   |
 
 #### Response
 
@@ -44,7 +44,7 @@ The general structure of commands and responses is as follows:
 
 | Field | Type     | Content                | Expected |
 | ----- | -------- | ---------------------- | -------- |
-| CLA   | byte (1) | Application Identifier |          |
+| CLA   | byte (1) | Application Identifier | 0x56     |
 | INS   | byte (1) | Instruction ID         | 0x00     |
 | P1    | byte (1) | Parameter 1            | ignored  |
 | P2    | byte (1) | Parameter 2            | ignored  |
@@ -66,7 +66,7 @@ The general structure of commands and responses is as follows:
 
 | Field | Type     | Content                | Expected |
 | ----- | -------- | ---------------------- | -------- |
-| CLA   | byte (1) | Application Identifier |          |
+| CLA   | byte (1) | Application Identifier | 0x56     |
 | INS   | byte (1) | Instruction ID         | 0x01     |
 | P1    | byte (1) | Parameter 1            | ignored  |
 | P2    | byte (1) | Parameter 2            | ignored  |
@@ -100,7 +100,7 @@ When starting the app, height and round will not be initialized. The first signa
 
 | Field | Type     | Content                | Expected |
 | ----- | -------- | ---------------------- | -------- |
-| CLA   | byte (1) | Application Identifier | 0x55     |
+| CLA   | byte (1) | Application Identifier | 0x56     |
 | INS   | byte (1) | Instruction ID         | 0x03     |
 | P1    | byte (1) | Packet Current Index   | ignored  |
 | P2    | byte (1) | Packet Total Count     | ignored  |
