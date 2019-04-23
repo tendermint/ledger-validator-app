@@ -15,17 +15,12 @@
 ********************************************************************************/
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "vote.h"
 #include "vote_parser.h"
-
-// Initializes vote context
-void vote_initialize();
-
-/// Clears the vote buffer
-void vote_reset();
-
-/// Clears the vote buffer
-void vote_state_reset();
 
 /// Appends buffer to the end of the current transaction buffer
 /// Transaction buffer will grow until it reaches the maximum allowed size
@@ -42,7 +37,6 @@ uint32_t vote_get_buffer_length();
 /// \return
 const uint8_t *vote_get_buffer();
 
-/// Parse vote in buffer
-/// This function should be called as soon as full buffer data is loaded.
-/// \return It an error core or PARSE_OK
-parse_error_t vote_parse();
+#ifdef __cplusplus
+}
+#endif

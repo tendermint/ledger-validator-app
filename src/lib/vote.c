@@ -15,14 +15,20 @@
 ********************************************************************************/
 
 #include "vote.h"
+#include "buffering.h"
+#include "vote_buffer.h"
+#include "vote_parser.h"
+#include <zxmacros.h>
+
+#include <string.h>
 
 vote_state_t vote_state;
 vote_t vote;
 
-vote_state_t *vote_state_get() {
-    return &vote_state;
+void vote_state_reset() {
+    MEMSET(&vote_state, 0, sizeof(vote_state_t));
 }
 
-vote_t *vote_get() {
-    return &vote;
+void vote_reset() {
+    buffering_reset();
 }

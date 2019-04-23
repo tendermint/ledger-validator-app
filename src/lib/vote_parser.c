@@ -15,6 +15,7 @@
 ********************************************************************************/
 
 #include "vote_parser.h"
+#include "vote_buffer.h"
 
 #define WIRE_TYPE_VARINT   0
 #define WIRE_TYPE_64BIT    1
@@ -185,4 +186,13 @@ parse_error_t vote_amino_parse(const uint8_t *buffer, size_t size, vote_t *vote)
     // NOTE: for proposal POLRound is not parsed or verified
 
     return parse_ok;
+}
+
+parse_error_t vote_parse() {
+    const uint8_t *vote_buffer = vote_get_buffer();
+    const uint32_t vote_buffer_length = vote_get_buffer_length();
+
+    parse_error_t error = vote_amino_parse(vote_buffer, vote_buffer_length, &vote);
+
+    return error;
 }

@@ -18,48 +18,20 @@
 
 #include "os.h"
 #include "cx.h"
-#include "vote.h"
-
 
 #define MAX_CHARS_PER_KEY_LINE      64
 #define MAX_CHARS_PER_VALUE_LINE    128
 #define MAX_SCREEN_LINE_WIDTH       60
 
-enum UI_STATE {
-    UI_MAIN_MENU,
-    UI_VOTE_INIT,
-    UI_VOTE_PROCESSING
-};
-
-extern enum UI_STATE view_uiState;
-
-//------ Delegates definitions
-typedef void (*delegate_accept_vote_state_signature)(vote_t *vote);
-
-typedef void (*delegate_reject_vote_state_signature)();
-
-typedef void (*delegate_vote_reset)();
-
-//------ Event handlers
-/// Set validation reset event handler
-void view_set_vote_reset_eh(delegate_vote_reset delegate);
-
-/// Set accept reference signature event handler
-void view_set_accept_eh(delegate_accept_vote_state_signature delegate);
-
-/// Set reject reference signature event handler
-void view_set_reject_eh(delegate_reject_vote_state_signature delegate);
-
-//------ Common functions
 /// view_init
 void view_init();
 
-/// view_mainmenu
-void view_display_main_menu();
+/// view_idle
+void view_idle();
 
-void view_set_state(vote_state_t *s, uint8_t public_key[32]);
+void view_set_data();
 
-void view_set_msg(vote_t *v);
+void view_set_pk(uint8_t public_key[32]);
 
 void view_display_vote_init();
 

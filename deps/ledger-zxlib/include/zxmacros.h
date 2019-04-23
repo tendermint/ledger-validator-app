@@ -15,10 +15,44 @@
 ********************************************************************************/
 
 #pragma once
+
+#if defined(LEDGER_SPECIFIC)
+#include "bolos_target.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if defined(TARGET_NANOX) || defined (TARGET_NANOS)
+#include "os.h"
+#define MEMMOVE os_memmove
+#define MEMSET os_memset
+#define MEMCPY os_memcpy
+#define MEMCPY_NV nvm_write
+
+#define WAIT_EVENT() io_seproxyhal_spi_recv(G_io_seproxyhal_spi_buffer, sizeof(G_io_seproxyhal_spi_buffer), 0)
+
+#define UX_WAIT()  \
+    while (!UX_DISPLAYED()) {  WAIT_EVENT();  UX_DISPLAY_NEXT_ELEMENT(); } \
+    WAIT_EVENT(); \
+    io_seproxyhal_general_status(); \
+    WAIT_EVENT()
+#else
+
+#include <string.h>
+
+#define MEMMOVE memmove
+#define MEMSET memset
+#define MEMCPY memcpy
+#define MEMCPY_NV memcpy
+#endif
+
 #include <inttypes.h>
 
 #include <stdint.h>
 #include <memory.h>
+
 #define __INLINE inline __attribute__((always_inline)) static
 
 #define NVCONST
@@ -42,21 +76,20 @@ void __logstack();
 #define LOGSTACK() __logstack()
 #endif
 
-__INLINE void nvcpy(NVCONST void *dst, void const *src, uint16_t n)
-{
+__INLINE void nvcpy(NVCONST void *dst, void const *src, uint16_t n) {
 #ifdef LEDGER_SPECIFIC
     nvm_write((void*)dst, (void*)src, n);
 #else
     memcpy(dst, src, n);
 #endif
 }
-__INLINE void nvset(NVCONST void *dst, uint32_t val)
-{
+
+__INLINE void nvset(NVCONST void *dst, uint32_t val) {
 #ifdef LEDGER_SPECIFIC
     uint32_t tmp=val;
     nvm_write((void*) dst, (void *) &tmp, 4);
 #else
-    *((uint32_t*)dst) = val;
+    *((uint32_t *) dst) = val;
 #endif
 }
 
@@ -69,22 +102,19 @@ __INLINE void nvset(NVCONST void *dst, uint32_t val)
 #define NtoHL(x) (x)
 #endif
 
-__INLINE void array_to_hexstr(char* dst, const uint8_t* src, uint8_t count)
-{
+__INLINE void array_to_hexstr(char *dst, const uint8_t *src, uint8_t count) {
     const char hexchars[] = "0123456789ABCDEF";
-    for(uint8_t i=0; i<count; i++, src++)
-    {
+    for (uint8_t i = 0; i < count; i++, src++) {
         *dst++ = hexchars[*src >> 4];
         *dst++ = hexchars[*src & 0x0F];
     }
-    *dst=0; // terminate string
+    *dst = 0; // terminate string
 }
 
-__INLINE const char* int64_to_str(char* data, int size, int64_t number)
-{
+__INLINE const char *int64_to_str(char *data, int size, int64_t number) {
     char temp[] = "-9223372036854775808";
 
-    char* ptr  = temp;
+    char *ptr = temp;
     int64_t num = number;
     int sign = 1;
     if (number < 0) {
@@ -96,8 +126,7 @@ __INLINE const char* int64_to_str(char* data, int size, int64_t number)
     }
     if (number < 0) {
         *ptr++ = '-';
-    }
-    else if (number == 0) {
+    } else if (number == 0) {
         *ptr++ = '0';
     }
     int distance = (ptr - temp) + 1;
@@ -112,7 +141,7 @@ __INLINE const char* int64_to_str(char* data, int size, int64_t number)
     return NULL;
 }
 
-__INLINE int8_t str_to_int8(const char *start, const char* end, char* error) {
+__INLINE int8_t str_to_int8(const char *start, const char *end, char *error) {
 
     int sign = 1;
     if (*start == '-') {
@@ -122,7 +151,7 @@ __INLINE int8_t str_to_int8(const char *start, const char* end, char* error) {
 
     int64_t value = 0;
     int multiplier = 1;
-    for (const char *s = end-1; s >= start; s--) {
+    for (const char *s = end - 1; s >= start; s--) {
         int delta = (*s - '0');
         if (delta >= 0 && delta <= 9) {
             value += (delta * multiplier);
@@ -137,7 +166,7 @@ __INLINE int8_t str_to_int8(const char *start, const char* end, char* error) {
 
     value *= sign;
     if (value >= INT8_MIN && value <= INT8_MAX) {
-        return (int8_t)value;
+        return (int8_t) value;
     }
     if (error != NULL) {
         *error = 1;
@@ -145,7 +174,7 @@ __INLINE int8_t str_to_int8(const char *start, const char* end, char* error) {
     return 0;
 }
 
-__INLINE int64_t str_to_int64(const char *start, const char* end, char* error) {
+__INLINE int64_t str_to_int64(const char *start, const char *end, char *error) {
 
     int sign = 1;
     if (*start == '-') {
@@ -155,7 +184,7 @@ __INLINE int64_t str_to_int64(const char *start, const char* end, char* error) {
 
     int64_t value = 0;
     uint64_t multiplier = 1;
-    for (const char *s = end-1; s >= start; s--) {
+    for (const char *s = end - 1; s >= start; s--) {
         int delta = (*s - '0');
         if (delta >= 0 && delta <= 9) {
             value += (delta * multiplier);
@@ -202,3 +231,11 @@ __INLINE uint64_t uint64_from_BEarray(const uint8_t data[8]) {
     }
     return result;
 }
+
+size_t asciify(char *utf8_in);
+
+size_t asciify_ext(const char *utf8_in, char *ascii_only_out);
+
+#ifdef __cplusplus
+}
+#endif

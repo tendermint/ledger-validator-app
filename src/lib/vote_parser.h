@@ -16,11 +16,13 @@
 
 #pragma once
 
-#include "vote.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "vote.h"
+
+#include <stdint.h>
 
 typedef enum {
     parse_ok = 0,
@@ -37,6 +39,11 @@ typedef enum {
 parse_error_t get_varint(const uint8_t *buffer, size_t buf_size, size_t *value, uint32_t start, uint32_t *pos_end);
 
 parse_error_t vote_amino_parse(const uint8_t *buffer, size_t size, vote_t *vote);
+
+/// Parse vote in buffer
+/// This function should be called as soon as full buffer data is loaded.
+/// \return It an error core or PARSE_OK
+parse_error_t vote_parse();
 
 #ifdef __cplusplus
 }

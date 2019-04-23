@@ -15,12 +15,12 @@
 ********************************************************************************/
 #pragma once
 
-#include <inttypes.h>
-#include <stddef.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <inttypes.h>
+#include <stddef.h>
 
 #define TYPE_PREVOTE        0x01
 #define TYPE_PRECOMMIT      0x02
@@ -37,9 +37,17 @@ typedef struct {
   vote_t vote;
 } vote_state_t;
 
-vote_state_t *vote_state_get();
+extern vote_state_t vote_state;
+extern vote_t vote;
 
-vote_t *vote_get();
+// Initializes vote context
+void vote_initialize();
+
+/// Clears the vote buffer
+void vote_reset();
+
+/// Clears the vote buffer
+void vote_state_reset();
 
 #ifdef __cplusplus
 }

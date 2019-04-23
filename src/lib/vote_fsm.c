@@ -16,15 +16,16 @@
 
 #include "vote_fsm.h"
 
-uint8_t validate_state_transition(vote_t *v, vote_state_t *vote_state) {
+uint8_t validate_state_transition() {
 
-    if (!vote_state->isInitialized) {
+    if (!vote_state.isInitialized) {
         return 0;
     }
 
     // Based on https://github.com/tendermint/tendermint/pull/3061/files#diff-31241946f48e67f759076b664f3d2745
 
-    vote_t *s = &vote_state->vote;
+    vote_t *s = &vote_state.vote;
+    vote_t *v = &vote;
 
     // This applies to all messages. If monotonically increasing, then accept
     if (v->Height > s->Height ||
@@ -32,7 +33,8 @@ uint8_t validate_state_transition(vote_t *v, vote_state_t *vote_state) {
         return 1;
     }
 
-    // If exactly same height/round, then need to be in type sequence (TYPE_PROPOSAL, TYPE_PREVOTE, TYPE_PRECOMMIT)
+    // If exactly same height/round, then need to be in type sequence
+    // (TYPE_PROPOSAL, TYPE_PREVOTE, TYPE_PRECOMMIT)
     if (v->Height == s->Height && v->Round == s->Round) {
         switch (v->Type) {
             case TYPE_PREVOTE: {
@@ -54,16 +56,13 @@ uint8_t validate_state_transition(vote_t *v, vote_state_t *vote_state) {
 }
 
 uint8_t try_state_transition() {
-    vote_t *vote = vote_get();
-    vote_state_t *vote_state = vote_state_get();
-
-    if (!validate_state_transition(vote, vote_state)) {
+    if (!validate_state_transition()) {
         return 0;
     }
 
-    vote_state->vote.Type = vote->Type;
-    vote_state->vote.Round = vote->Round;
-    vote_state->vote.Height = vote->Height;
+    vote_state.vote.Type = vote.Type;
+    vote_state.vote.Round = vote.Round;
+    vote_state.vote.Height = vote.Height;
 
     return 1;
 }

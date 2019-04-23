@@ -1,5 +1,5 @@
 /*******************************************************************************
-*   (c) 2018 ZondaX GmbH
+*   (c) 2019 ZondaX GmbH
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -14,38 +14,24 @@
 *  limitations under the License.
 ********************************************************************************/
 
-#include <zxmacros.h>
-#include "buffering.h"
-#include "vote_buffer.h"
+#include <stdint.h>
+#include <stddef.h>
+#include "bech32.h"
+#include "segwit_addr.h"
+#include "bittools.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void bech32EncodeFromBytes(char *output,
+                           const char *hrp,
+                           const uint8_t *data,
+                           size_t data_len) {
+    output[0] = 0;
+    if (data_len > 128) {
+        return;
+    }
 
-#if defined(TARGET_NANOS)
-    #define RAM_BUFFER_SIZE 1024
-#else
-    #define RAM_BUFFER_SIZE 16384
-#endif
+    uint8_t tmp_data[128];
+    size_t tmp_size = 0;
 
-uint8_t ram_buffer[RAM_BUFFER_SIZE];
-
-void vote_initialize() {
-    buffering_init(ram_buffer, sizeof(ram_buffer), NULL, 0);
+    convert_bits(tmp_data, &tmp_size, 5, data, data_len, 8, 0);
+    bech32_encode(output, hrp, tmp_data, tmp_size);
 }
-
-uint32_t vote_append(unsigned char *buffer, uint32_t length) {
-    return buffering_append(buffer, length);
-}
-
-uint32_t vote_get_buffer_length() {
-    return buffering_get_buffer()->pos;
-}
-
-const uint8_t *vote_get_buffer() {
-    return buffering_get_buffer()->data;
-}
-
-#ifdef __cplusplus
-}
-#endif

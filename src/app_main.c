@@ -16,21 +16,17 @@
 ********************************************************************************/
 
 #include "app_main.h"
+
 #include "view.h"
 #include "lib/vote_buffer.h"
 #include "lib/vote_fsm.h"
 #include "signature.h"
+#include "actions.h"
+#include <zxmacros.h>
 
 #include <os_io_seproxyhal.h>
 #include <os.h>
 #include <string.h>
-
-const uint8_t bip32_depth = 5;
-uint32_t bip32_path[5];
-
-unsigned char public_key[32];
-cx_ecfp_private_key_t cx_privateKey;
-uint8_t keys_initialized = 0;
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
@@ -49,12 +45,14 @@ unsigned char io_event(unsigned char channel) {
                 UX_DISPLAYED_EVENT();
             break;
 
-        case SEPROXYHAL_TAG_TICKER_EVENT: { //
-            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
-                    if (UX_ALLOWED) {
-                        UX_REDISPLAY();
-                    }
-            });
+        case SEPROXYHAL_TAG_TICKER_EVENT: {
+            if (!vote_state.isInitialized) {
+                UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
+                        if (UX_ALLOWED) {
+                            UX_REDISPLAY();
+                        }
+                });
+            }
             break;
         }
 
@@ -98,7 +96,7 @@ void app_init() {
     io_seproxyhal_init();
     USB_power(0);
     USB_power(1);
-    view_display_main_menu();
+    view_idle();
 }
 
 bool initializeBip32(uint8_t *depth, uint32_t path[10], uint32_t rx, uint32_t offset) {
@@ -123,7 +121,7 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
 
     uint16_t offset = OFFSET_DATA;
     if (rx < offset) {
-        THROW(APDU_CODE_DATA_INVALID);
+        THROW(APDU_CODE_WRONG_LENGTH);
     }
 
     if (packageIndex == 1) {
@@ -138,59 +136,9 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
     return packageIndex == packageCount;
 }
 
-void format_pubkey(unsigned char *outputBuffer, cx_ecfp_public_key_t *pubKey) {
-    for (int i = 0; i < 32; i++) {
-        outputBuffer[i] = pubKey->W[64 - i];
-    }
-
-    if ((pubKey->W[32] & 1) != 0) {
-        outputBuffer[31] |= 0x80;
-    }
-}
-
 void extract_keys() {
-    cx_ecfp_public_key_t cx_publicKey;
-    uint8_t privateKeyData[32];
-
-    bip32_path[0] = 0x80000000 | 44;
-    bip32_path[1] = 0x80000000 | 118;
-    bip32_path[2] = 0x80000000 | 0;
-    bip32_path[3] = 0x00000000 | 0;
-    bip32_path[4] = 0x00000000 | 0;
-
-    // Generate keys
-    os_perso_derive_node_bip32_seed_key(
-            HDW_NORMAL,
-            CX_CURVE_Ed25519,
-            bip32_path,
-            bip32_depth,
-            privateKeyData,
-            NULL,
-            NULL,
-            0);
-
-    keys_ed25519(&cx_publicKey, &cx_privateKey, privateKeyData);
-    memset(privateKeyData, 0, 32);
-
-    format_pubkey(public_key, &cx_publicKey);
-    keys_initialized = 1;
-}
-
-unsigned int sign_vote() {
-    uint8_t *signature = G_io_apdu_buffer;
-    unsigned int signature_capacity = IO_APDU_BUFFER_SIZE - 2;
-    unsigned int info = 0;
-
-    return cx_eddsa_sign(&cx_privateKey,
-                         CX_LAST,
-                         CX_SHA512,
-                         vote_get_buffer(),
-                         vote_get_buffer_length(),
-                         NULL,
-                         0,
-                         signature,
-                         signature_capacity,
-                         &info);
+    actions_getkeys();
+    view_set_pk(public_key);
 }
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
@@ -240,37 +188,31 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     }
 
                     parse_error_t error_code = vote_parse();
-
                     if (error_code != parse_ok) {
-                        G_io_apdu_buffer[*tx] = (uint8_t) error_code;
-                        *tx++;
+                        G_io_apdu_buffer[0] = (uint8_t) error_code;
+                        *tx = 1;
                         THROW(APDU_CODE_DATA_INVALID);
                     }
 
-                    vote_t *vote = vote_get();
-                    vote_state_t *vote_state = vote_state_get();
-
-                    if (vote == NULL || vote_state == NULL) {
-                        THROW(APDU_CODE_DATA_INVALID);
-                    }
-
-                    if (!vote_state->isInitialized) {
-                        // Show values and ask user before setting state
-                        view_set_msg(vote);
+                    if (!vote_state.isInitialized) {
+                        view_set_data();
+                        view_set_pk(public_key);
                         view_display_vote_init();
+                        UX_WAIT();
                         *flags |= IO_ASYNCH_REPLY;
                         break;
                     }
 
                     // Check with vote FSM if vote can be signed
                     if (!try_state_transition()) {
-                        THROW(APDU_CODE_DATA_INVALID);
+                        THROW(APDU_CODE_CONDITIONS_NOT_SATISFIED);
                     }
 
-                    *tx = sign_vote();
-                    view_set_state(vote_state, public_key);
+                    *tx = action_sign();
+                    view_set_data();
+                    view_display_vote_processing();
+                    UX_WAIT();
                     THROW(APDU_CODE_OK);
-
                 }
                     break;
 
@@ -304,30 +246,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     END_TRY;
 }
 
-void reject_vote_state() {
-    set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
-    view_display_main_menu();
-}
-
-void accept_vote_state(vote_t *v) {
-    vote_state_t *s = vote_state_get();
-
-    s->vote.Type = v->Type;
-    s->vote.Height = v->Height;
-    s->vote.Round = v->Round;
-    s->isInitialized = 1;
-
-    view_set_state(s, public_key);
-
-    unsigned int tx = sign_vote();
-
-    set_code(G_io_apdu_buffer + tx, 0, APDU_CODE_OK);
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx + 2);
-
-    view_display_vote_processing();
-}
-
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 
@@ -335,10 +253,6 @@ void app_main() {
     volatile uint32_t rx = 0, tx = 0, flags = 0;
 
     vote_state_reset();
-    view_set_vote_reset_eh(&vote_state_reset);
-    view_set_accept_eh(&accept_vote_state);
-    view_set_reject_eh(&reject_vote_state);
-
     keys_initialized = 0;
     extract_keys();
 
