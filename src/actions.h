@@ -1,4 +1,5 @@
 /*******************************************************************************
+*   (c) 2016 Ledger
 *   (c) 2018 ZondaX GmbH
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,39 +14,23 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
+#pragma once
 
-#include <zxmacros.h>
-#include "buffering.h"
-#include "vote_buffer.h"
+#include <stdint.h>
+#include <os_io_seproxyhal.h>
+#include <os.h>
+#include <cx.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+extern const uint8_t bip32_depth;
+extern uint32_t bip32_path[5];
 
-#if defined(TARGET_NANOS)
-    #define RAM_BUFFER_SIZE 1024
-#else
-    #define RAM_BUFFER_SIZE 16384
-#endif
+extern unsigned char public_key[32];
+extern cx_ecfp_private_key_t cx_privateKey;
+extern uint8_t keys_initialized;
 
-uint8_t ram_buffer[RAM_BUFFER_SIZE];
 
-void vote_initialize() {
-    buffering_init(ram_buffer, sizeof(ram_buffer), NULL, 0);
-}
-
-uint32_t vote_append(unsigned char *buffer, uint32_t length) {
-    return buffering_append(buffer, length);
-}
-
-uint32_t vote_get_buffer_length() {
-    return buffering_get_buffer()->pos;
-}
-
-const uint8_t *vote_get_buffer() {
-    return buffering_get_buffer()->data;
-}
-
-#ifdef __cplusplus
-}
-#endif
+void action_reset();
+void action_reject();
+void action_accept();
+int action_sign();
+void actions_getkeys();

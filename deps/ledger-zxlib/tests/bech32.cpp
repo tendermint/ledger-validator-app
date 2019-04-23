@@ -15,7 +15,6 @@
 ********************************************************************************/
 #include <gmock/gmock.h>
 #include <zxmacros.h>
-#include <zxio.h>
 #include <bech32.h>
 
 namespace {
@@ -26,12 +25,12 @@ namespace {
         uint8_t data1[] = {1, 3, 5};
         uint8_t data2[] = {1, 3, 5, 7, 9, 11, 13};
 
-        bech32_encode(addr_out, hrp, data1, sizeof(data1));
+        bech32EncodeFromBytes(addr_out, hrp, data1, sizeof(data1));
         std::cout << addr_out << std::endl;
-        ASSERT_STREQ("zx1pr988jqtm", addr_out);
+        ASSERT_STREQ("zx1qypse825ac", addr_out);
 
-        bech32_encode(addr_out, hrp, data2, sizeof(data2));
+        bech32EncodeFromBytes(addr_out, hrp, data2, sizeof(data2));
         std::cout << addr_out << std::endl;
-        ASSERT_STREQ("zx1pr98ftd3cap2d", addr_out);
+        ASSERT_STREQ("zx1qyps2pcfpvx20dk22", addr_out);
     }
 }
