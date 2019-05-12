@@ -16,20 +16,35 @@
 
 #pragma once
 
-#if defined(LEDGER_SPECIFIC)
-#include "bolos_target.h"
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#if defined(TARGET_NANOX) || defined (TARGET_NANOS)
+#if defined(LEDGER_SPECIFIC)
+#include "bolos_target.h"
+#endif
+
+#if defined(TARGET_NANOX)
+#define NV_CONST const
+#define NV_VOL volatile
+#else
+#define NV_CONST
+#define NV_VOL
+#endif
+
+#define NV_ALIGN __attribute__ ((aligned(64)))
+
+#if defined (TARGET_NANOS) || defined(TARGET_NANOX)
+
+#include "bolos_target.h"
 #include "os.h"
-#define MEMMOVE os_memmove
-#define MEMSET os_memset
-#define MEMCPY os_memcpy
-#define MEMCPY_NV nvm_write
+#include "cx.h"
+
+#if defined(TARGET_NANOX)
+#include "ux.h"
+#else
+#include "os_io_seproxyhal.h"
+#endif
 
 #define WAIT_EVENT() io_seproxyhal_spi_recv(G_io_seproxyhal_spi_buffer, sizeof(G_io_seproxyhal_spi_buffer), 0)
 
@@ -38,59 +53,41 @@ extern "C" {
     WAIT_EVENT(); \
     io_seproxyhal_general_status(); \
     WAIT_EVENT()
-#else
 
-#include <string.h>
 
-#define MEMMOVE memmove
-#define MEMSET memset
-#define MEMCPY memcpy
-#define MEMCPY_NV memcpy
-#endif
-
-#include <inttypes.h>
-
-#include <stdint.h>
-#include <memory.h>
-
-#define __INLINE inline __attribute__((always_inline)) static
-
-#define NVCONST
-
-#define LOG(str)
-#define LOGSTACK()
-
-#ifdef LEDGER_SPECIFIC
-#include "os.h"
-#include "cx.h"
+#define MEMMOVE os_memmove
+#define MEMSET os_memset
+#define MEMCPY os_memcpy
+#define MEMCPY_NV nvm_write
 
 void debug_printf(void* buffer);
 
 #undef LOG
 #undef LOGSTACK
 #define LOG(str) debug_printf(str)
-
 extern unsigned int app_stack_canary;
 void __logstack();
-
 #define LOGSTACK() __logstack()
+
+#else
+#include <string.h>
+#define MEMMOVE memmove
+#define MEMSET memset
+#define MEMCPY memcpy
+#define MEMCPY_NV memcpy
+#define LOG(str)
+#define LOGSTACK()
 #endif
 
-__INLINE void nvcpy(NVCONST void *dst, void const *src, uint16_t n) {
-#ifdef LEDGER_SPECIFIC
-    nvm_write((void*)dst, (void*)src, n);
-#else
-    memcpy(dst, src, n);
-#endif
-}
+#include <inttypes.h>
+#include <stdint.h>
+#include <memory.h>
 
-__INLINE void nvset(NVCONST void *dst, uint32_t val) {
-#ifdef LEDGER_SPECIFIC
-    uint32_t tmp=val;
-    nvm_write((void*) dst, (void *) &tmp, 4);
-#else
-    *((uint32_t *) dst) = val;
-#endif
+#define __Z_INLINE inline __attribute__((always_inline)) static
+
+#define SET_NV(DST, TYPE, VAL) { \
+    TYPE nvset_tmp=(VAL); \
+    MEMCPY_NV((void*) PIC(DST), (void *) PIC(&nvset_tmp), sizeof(TYPE)); \
 }
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
@@ -102,7 +99,7 @@ __INLINE void nvset(NVCONST void *dst, uint32_t val) {
 #define NtoHL(x) (x)
 #endif
 
-__INLINE void array_to_hexstr(char *dst, const uint8_t *src, uint8_t count) {
+__Z_INLINE void array_to_hexstr(char *dst, const uint8_t *src, uint8_t count) {
     const char hexchars[] = "0123456789ABCDEF";
     for (uint8_t i = 0; i < count; i++, src++) {
         *dst++ = hexchars[*src >> 4];
@@ -111,7 +108,7 @@ __INLINE void array_to_hexstr(char *dst, const uint8_t *src, uint8_t count) {
     *dst = 0; // terminate string
 }
 
-__INLINE const char *int64_to_str(char *data, int size, int64_t number) {
+__Z_INLINE const char *int64_to_str(char *data, int size, int64_t number) {
     char temp[] = "-9223372036854775808";
 
     char *ptr = temp;
@@ -141,7 +138,7 @@ __INLINE const char *int64_to_str(char *data, int size, int64_t number) {
     return NULL;
 }
 
-__INLINE int8_t str_to_int8(const char *start, const char *end, char *error) {
+__Z_INLINE int8_t str_to_int8(const char *start, const char *end, char *error) {
 
     int sign = 1;
     if (*start == '-') {
@@ -174,7 +171,7 @@ __INLINE int8_t str_to_int8(const char *start, const char *end, char *error) {
     return 0;
 }
 
-__INLINE int64_t str_to_int64(const char *start, const char *end, char *error) {
+__Z_INLINE int64_t str_to_int64(const char *start, const char *end, char *error) {
 
     int sign = 1;
     if (*start == '-') {
@@ -200,7 +197,7 @@ __INLINE int64_t str_to_int64(const char *start, const char *end, char *error) {
     return value * sign;
 }
 
-__INLINE void fpuint64_to_str(char *dst, const uint64_t value, uint8_t decimals) {
+__Z_INLINE void fpuint64_to_str(char *dst, const uint64_t value, uint8_t decimals) {
     char buffer[30];
 
     int64_to_str(buffer, 30, value);
@@ -223,7 +220,7 @@ __INLINE void fpuint64_to_str(char *dst, const uint64_t value, uint8_t decimals)
     }
 }
 
-__INLINE uint64_t uint64_from_BEarray(const uint8_t data[8]) {
+__Z_INLINE uint64_t uint64_from_BEarray(const uint8_t data[8]) {
     uint64_t result = 0;
     for (int i = 0; i < 8; i++) {
         result <<= 8;
@@ -235,6 +232,10 @@ __INLINE uint64_t uint64_from_BEarray(const uint8_t data[8]) {
 size_t asciify(char *utf8_in);
 
 size_t asciify_ext(const char *utf8_in, char *ascii_only_out);
+
+#ifndef PIC
+#define PIC(x) (x)
+#endif
 
 #ifdef __cplusplus
 }
