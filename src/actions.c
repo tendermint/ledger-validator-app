@@ -103,7 +103,7 @@ void actions_getkeys() {
             0);
 
     keys_ed25519(&cx_publicKey, &cx_privateKey, privateKeyData);
-    MEMSET(privateKeyData, 0, 32);
+    explicit_bzero(privateKeyData, 32);
 
     format_pubkey(public_key, &cx_publicKey);
     keys_initialized = 1;

@@ -49,6 +49,6 @@ int sign_ed25519(const uint8_t *message,
                                       signature_capacity,
                                       &info);
 
-    os_memset(privateKey, 0, sizeof(privateKey));
+    explicit_bzero(privateKey, sizeof(privateKey));
     return 1;
 }
