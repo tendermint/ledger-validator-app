@@ -25,7 +25,7 @@ include $(BOLOS_SDK)/Makefile.defines
 APPNAME = "Tendermint"
 APPVERSION_M=0
 APPVERSION_N=9
-APPVERSION_P=0
+APPVERSION_P=1
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 APP_LOAD_PARAMS = --appFlags 0x00 --delete $(COMMON_LOAD_PARAMS) --path "44'/118'"
@@ -84,7 +84,8 @@ DEFINES          += HAVE_UX_FLOW
 SDK_SOURCE_PATH  += lib_ux
 else
 # Assume Nano S
-DEFINES += IO_SEPROXYHAL_BUFFER_SIZE_B=128
+DEFINES       += IO_SEPROXYHAL_BUFFER_SIZE_B=128
+DEFINES       += HAVE_BOLOS_UX COMPLIANCE_UX_160 HAVE_UX_LEGACY
 endif
 
 # X specific
@@ -135,13 +136,10 @@ SDK_SOURCE_PATH  += lib_ux
 endif
 
 load:
-	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
+	sudo -E python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
 
 delete:
-	python -m ledgerblue.deleteApp $(COMMON_DELETE_PARAMS)
-
-package:
-	./pkgdemo.sh ${APPNAME} ${APPVERSION} ${ICONNAME}
+	sudo -E python -m ledgerblue.deleteApp $(COMMON_DELETE_PARAMS)
 
 # Import generic rules from the SDK
 include $(BOLOS_SDK)/Makefile.rules

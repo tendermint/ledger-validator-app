@@ -52,7 +52,7 @@ SECTIONS
 
      /* ensure main is always @ 0xC0D00000 */
      *(.boot*)
-    
+
     /* place the other code and rodata defined BUT nvram variables that are displaced in a r/w area */
     *(.text*)
     *(.rodata)
@@ -60,29 +60,29 @@ SECTIONS
     *(.rodata.N[^_]*)
 
     . = ALIGN(4);
-    
+
     /* all code placed */
     _etext = .;
 
     . = ALIGN(PAGE_SIZE);
 
     _nvram_data = .;
-    
+
     /* NVM data (ex-filesystem) */
     *(.bss.N_* .rodata.N_*)
 
     . = ALIGN(PAGE_SIZE);
+    _envram_data = .;
+
     _install_parameters = .;
-    PROVIDE(N_install_parameters = .);
     _envram = .;
-    _nvram_data_size = _envram - _nvram_data;
-    
+
   } > FLASH = 0x00
 
   .data (NOLOAD):
   {
     . = ALIGN(4);
-    
+
     /**
      * Place RAM initialized variables
      */
@@ -112,9 +112,11 @@ SECTIONS
     app_stack_canary = .;
     PROVIDE(app_stack_canary = .);
     . += 4;
-    _stack = .;
-    . = _stack + STACK_SIZE;
-    PROVIDE( _stack_size = STACK_SIZE );
+    _stack_validation = .;
+    . = _stack_validation + STACK_SIZE;
+    _stack = ABSOLUTE(END_STACK) - STACK_SIZE;
+    PROVIDE( _stack = ABSOLUTE(END_STACK) - STACK_SIZE);
+    _estack = ABSOLUTE(END_STACK);
     PROVIDE( _estack = ABSOLUTE(END_STACK) );
 
   } > SRAM = 0x00
@@ -165,5 +167,5 @@ SECTIONS
   .debug_funcnames 0 : { *(.debug_funcnames) }
   .debug_typenames 0 : { *(.debug_typenames) }
   .debug_varnames  0 : { *(.debug_varnames) }
-  
+
 }
